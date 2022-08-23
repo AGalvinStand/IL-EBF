@@ -2,17 +2,15 @@
 
 #   This script will perform the core investments calculations.
 
-# -------------
-
 # PREPARED BY ------
 
 # Chris Poulos
 
 # 2022-08-10
 
-# Let's go! - <('.' <)
+# Let's go! - <('o' <)
 
-# load ---------
+# LOAD ---------
 
 options(scipen = 999)
 
@@ -21,7 +19,7 @@ library(readxl)
 
 # CORE INVESTMENT STEPS --------
 
-# CORE TEACHER AMOUNT------
+# CORE TEACHER COST ------
 
 # Bring in Low-income enrollment and control vairable dataframes.
 
@@ -51,10 +49,7 @@ hs_coreteacher_salary <- as.numeric(il_fy22_cvs_avgsalary_clean$core_teacher[2])
 # Core teacher cost
 
 ebf_core_investments_fy22 <- ebf_core_investments_fy22 |>
-  mutate(core_teacher_cost = 
-           (fte_coreteacher_k_3*k8_coreteacher_salary)+
-           (fte_coreteacher_4_8*k8_coreteacher_salary)+
-           (fte_coreteacher_9_12*hs_coreteacher_salary))
+  mutate(core_teacher_cost = as.integer(((fte_coreteacher_k_3*k8_coreteacher_salary)+(fte_coreteacher_4_8*k8_coreteacher_salary)+(fte_coreteacher_9_12*hs_coreteacher_salary))*100)/100)
 
 # SPECIALIST TEACHER COST ----------
 
