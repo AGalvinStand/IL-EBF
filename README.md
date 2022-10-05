@@ -16,7 +16,7 @@ I think we split the simulator's policy 'levers', so to speak, into three bucket
     - Concentrated poverty weights;
     - Race.
 2. **Changes to the Minimum Funding Level (MFL)**.<sup>2   
-3. **Changes to the local capacity target (LCT)**, namely an option to see how state funding changes if poorer discricts could free up their property levy for capital projects and services.
+3. **Changes to the local capacity target (LCT)**, namely an option to see how state funding changes if poorer districts could free up their property levy for capital projects and services.
     
 ### Functionality 
 
