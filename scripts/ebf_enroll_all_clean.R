@@ -139,3 +139,7 @@ glimpse(il_fy22_enroll_all_raw$distid)
 # end, 37-40).
 
 il_fy22_enroll_all_clean <- il_fy22_enroll_all_raw[,-c(7,10,13,17,22,37:40)]
+
+# Remove raw dataframe
+
+rm(il_fy22_enroll_all_raw)

@@ -1,3 +1,14 @@
+# 
+
+options(scipen = 999)
+
+library(tidyverse)
+library(readxl)
+
+# Bring in and clean Local Capacity Target sheet ------
+
+il_fy22_perstudentinvestment_raw <- read_excel("data/raw/FY22-EBF-Full-Calc-Revised.xlsx", sheet = 5, 
+                                               skip = 5, n_max = 922)
 
 # Purpose ------------
 
@@ -105,7 +116,6 @@ ebf_per_student_investments <-  il_fy22_enroll_all_clean |>
   mutate(
     maint_ops_total = maint_ops_pk_5 + maint_ops_6_8 + maint_ops_9_12
   )
-
 
 # Central Office --------------
 

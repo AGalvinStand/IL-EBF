@@ -125,14 +125,14 @@ names(il_fy22_cvs_avgsalary_raw)
 #                     down in the script
 
 new_names <- c("grade",
-               "guidance_counselor",
-               "school_psychologist",
-               "school_nurse",
-               "assistant_principal",
                "core_teacher",
+               "guidance_counselor",
                "social_worker",
+               "school_psychologist",
                "librarian_mediaspecialist",
-               "principal")
+               "school_nurse",
+               "principal",
+               "assistant_principal")
                
 # manually replace column names
 colnames(il_fy22_cvs_avgsalary_raw) <- new_names
@@ -454,3 +454,17 @@ names(il_fy22_cvs_additionalinvestment_sped_raw)
 # cleaned data frame
 
 il_fy22_cvs_additionalinvestment_sped_clean <- il_fy22_cvs_additionalinvestment_sped_raw
+
+# Remove raw data frames. Using fm to force through if 
+
+rm(il_fy22_cvs_additionalinvestment_el_raw,
+   il_fy22_cvs_additionalinvestment_li_raw,
+   il_fy22_cvs_additionalinvestment_sped_raw,
+   il_fy22_cvs_assumedsalary_raw,
+   il_fy22_cvs_avgsalary_raw,
+   il_fy22_cvs_core_class_size_raw,
+   il_fy22_cvs_core_investments_raw,
+   il_fy22_cvs_core_subsalary_raw,
+   il_fy22_cvs_perstudent_centralservices_raw,
+   il_fy22_cvs_perstudent_investment_perstudent_raw,
+   il_fy22_cvs_protoschool_raw)

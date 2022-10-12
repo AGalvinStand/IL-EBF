@@ -74,8 +74,6 @@ library(readxl)
 il_fy22_dist_join <- read_excel("data/raw/FY22-EBF-Full-Calc-Revised.xlsx", sheet = 2,
                                 skip = 10)
 
-
-
 # fix column names
 il_fy22_dist_join |> il_fy22_dist_join
   # convert colnames to lowercase

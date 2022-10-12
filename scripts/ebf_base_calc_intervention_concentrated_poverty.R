@@ -1,0 +1,264 @@
+# PURPOSE ---------
+
+#   This script will produce a dataframe for Illinois Evidence Based Funding
+#   formula (EBF) taking into account Team Illinois' policy intervention,
+#   which is adding weights for concentrated poverty).
+
+# PREPARED BY ------
+
+# Chris Poulos
+
+# 2022-08-26
+
+# Let's go! - <('.' <)
+
+# Bring in 4 key calculations ---------------------
+
+source("scripts/ebf_core_investments_concentrated_poverty.R")
+source("scripts/ebf_per_student_investments_simple.R")
+source("scripts/ebf_additional_investments_concentrated_pov_weight.R")
+source("scripts/ebf_local_cap_clean.R")
+
+# Join dataframes
+
+ebf_base_calc_conpov <- ebf_core_investments |>
+  left_join(ebf_additional_investments, by = c("distid" = "distid")) |>
+  left_join(ebf_local_capacity_target, by = c("distid" = "distid")) |>
+  left_join(ebf_per_student_investments, by = c("distid" = "distid"))
+
+rm(ebf_additional_investments,
+   ebf_core_investments,
+   ebf_local_capacity_target,
+   ebf_per_student_investments)
+
+# Stage 1: Determining Adequacy Level -------------
+
+  # Adequacy target
+
+ebf_base_calc_conpov <- ebf_base_calc_conpov |>
+  mutate(adequacy_target =
+           ci_totalcost + total_psi_cwi + ai_w_cp_total_cost + total_psi_nocwi)
+
+# Final adequacy target
+
+# Source CWI
+
+source("scripts/ebf_region_factor_clean.R")
+
+cwi <- il_fy22_region_factor_clean [,-c(2:15)]
+
+ebf_base_calc_conpov <- ebf_base_calc_conpov |>
+  left_join(cwi, by = c("distid" = "distid"))
+
+ebf_base_calc_conpov <- ebf_base_calc_conpov |>
+  mutate(final_adequacy_target =
+           ((ci_totalcost + total_psi_cwi + ai_w_cp_total_cost)*region_factor_ebm) + total_psi_nocwi)
+
+  # Per pupil final adequacy target
+
+ebf_base_calc_conpov <- ebf_base_calc_conpov |>
+  mutate(final_adequacy_target_per_pupil =
+           final_adequacy_target/total_ase)
+
+# Stage 2: Determining Percent of Adequacy --------
+
+  # Use final percent of adequacy from Local Capacity Target calculations.
+  # Final % of adquacy =  final resources (local tax revenue) / final adequacy target, or
+  #                       (Final adjusted local capacity target + adjusted base funded minimum + corporate personal property replacement tax) / final adequacy target
+
+
+# Pre-Stage 3: Determining Tier -------------------
+
+  # Tier cut offs
+
+tier1 <- 0.69
+tier2 <- 0.90
+tier3 <- 1.00
+
+  # Adequacy funding gap
+
+ebf_base_calc_conpov <- ebf_base_calc_conpov |>
+  mutate(adequacy_funding_gap = 
+           final_adequacy_target - final_resources)
+
+  # Adequacy Funding Level
+
+ebf_base_calc_conpov <- ebf_base_calc_conpov |>
+  mutate(adequacy_funding_level = 
+           final_resources / final_adequacy_target)
+
+  # Assign tiers based on Adequacy Funding Level
+
+ebf_base_calc_conpov <- ebf_base_calc_conpov |>
+  mutate(tier =
+           case_when(adequacy_funding_level < .69 ~ 1,
+                     adequacy_funding_level < .9 & adequacy_funding_level >= .69 ~ 2,
+                     adequacy_funding_level < 1 & adequacy_funding_level >= .9 ~ 3,
+                     adequacy_funding_level >= 1 ~ 4))
+
+  # Flag tier 1
+
+ebf_base_calc_conpov <- ebf_base_calc_conpov |>
+  mutate(tier1flag =
+           case_when(tier == 1 ~ 1,
+                     tier > 1 ~ 0))
+
+# Stage 3: Determining Adequacy Level (Tier funding) -------------
+
+# Tier funding allocation rates
+
+tier1_far <- 0.3
+tier2_far <- 0.0522
+tier3_far <- 0.0205
+tier4_far <- 0.0008
+
+# Tier 1 funding gap
+
+ebf_base_calc_conpov <- ebf_base_calc_conpov |>
+  mutate(tier1_funding_gap = 
+           ((tier1*final_adequacy_target)-final_resources) * tier1flag)
+
+# Tier 1 funding
+
+ebf_base_calc_conpov <- ebf_base_calc_conpov |>
+  mutate(tier1_funding = 
+           tier1flag * (tier1_funding_gap*tier1_far))
+
+ebf_base_calc_conpov <- ebf_base_calc_conpov |>
+  mutate(tier1_perpupil =
+           ifelse(total_ase > 0, 
+                  tier1_funding/total_ase,
+                  0))
+
+# Tier 2 funding gap
+
+ebf_base_calc_conpov <- ebf_base_calc_conpov |>
+  mutate(tier2_funding_gap = 
+           ifelse(tier == 1 | tier ==2,
+                  (((tier2*final_adequacy_target)-final_resources-tier1_funding_gap)*(1-local_cap_ratio_capped90)),
+                  0))
+
+# Tier 2 funding 
+
+  # Set Maximum Funding Per Student for Purposes of Caclulating Final Tier 2 Funding
+
+t1 <- 1465.08
+t2 <- 291.39
+t2fin <- 285.95
+t3 <- 32.29
+t4 <- 1.32
+
+  # Step 1
+
+ebf_base_calc_conpov <- ebf_base_calc_conpov |>
+  mutate(tier2_funding_step1 =
+           tier2_funding_gap * tier2_far)
+
+  # Original Tier 2 Per Student
+
+ebf_base_calc_conpov <- ebf_base_calc_conpov |>
+  mutate(tier2_perpupil_orig =
+           ifelse(total_ase>0,
+                  tier2_funding_step1/total_ase,
+                  0))
+
+  # Step 2
+
+ebf_base_calc_conpov <- ebf_base_calc_conpov |>
+  mutate(tier2_funding_step2 =
+           ifelse(tier == 2 & tier2_perpupil_orig<t3,
+                  t3*total_ase,
+                  tier2_funding_step1))
+
+  # Step 3
+
+orig_revised_step2_funding <- 0.981
+
+ebf_base_calc_conpov <- ebf_base_calc_conpov |>
+  mutate(tier2_funding_step3 =
+           tier2_funding_step2 * orig_revised_step2_funding)
+           
+  # Final Tier 2 Per Student
+
+ebf_base_calc_conpov <- ebf_base_calc_conpov |>
+  mutate(tier2_perpupil_final =
+           ifelse(total_ase>0,
+                  tier2_funding_step3/total_ase,
+                  0))
+
+# Tier 3 funding
+
+ebf_base_calc_conpov <- ebf_base_calc_conpov |>
+  mutate(tier3_funding =
+           ifelse(tier == 3, tier3_far*final_adequacy_target,
+                  0))
+
+ebf_base_calc_conpov <- ebf_base_calc_conpov |>
+  mutate(tier3_perpupil =
+           ifelse(total_ase>0,
+                  tier3_funding/total_ase,
+                  0))
+
+# Tier 4 funding
+
+ebf_base_calc_conpov <- ebf_base_calc_conpov |>
+  mutate(tier4_funding =
+           ifelse(tier == 4, tier4_far*final_adequacy_target,
+                  0))
+
+ebf_base_calc_conpov <- ebf_base_calc_conpov |>
+  mutate(tier3_perpupil =
+           ifelse(total_ase>0,
+                  tier4_funding/total_ase,
+                  0))
+
+# Calculating total state contribution --------------
+
+  # Calculated new FY Funding
+
+ebf_base_calc_conpov <- ebf_base_calc_conpov |>
+  mutate(new_fy_funding =
+           tier1_funding +
+           tier2_funding_step3 +
+           tier3_funding +
+           tier4_funding)
+
+  # Calculated new FY Funding (per pupil)
+
+ebf_base_calc_conpov <- ebf_base_calc_conpov |>
+  mutate(new_fy_funding_perpupil =
+           ifelse(total_ase >0,
+                  new_fy_funding/total_ase,
+                  0))
+
+  # Total gross state FY contribution
+
+ebf_base_calc_conpov <- ebf_base_calc_conpov |>
+  mutate(gross_fy_funding =
+           new_fy_funding +
+           base_funding_minimum)
+
+# Note: there is a variable FY21 EBF adjustments, which has no values for
+#       any district. However there is an additional variable
+#       "Total NET FY 22 State Contribution" which is the total gross fy state
+#       contribution plus the EBF adjustment. For the time being I am going to
+#       ignore this, but it is something to look into. (Chris Poulos, 8/26/22)
+
+rm(cwi,
+   il_fy22_region_factor_clean,
+   il_fy22_region_factor_raw,
+   new_names,
+   orig_revised_step2_funding,
+   t1,
+   t2,
+   t2fin,
+   t3,
+   t4,
+   tier1,
+   tier1_far,
+   tier2,
+   tier2_far,
+   tier3,
+   tier3_far,
+   tier4_far)
+
