@@ -50,7 +50,7 @@ We will discuss the possibility of rolling out the simulator publicly (i.e. a pr
 
 After the Bellwether course, we will all have access to the data and scripts created during the course to follow our own pursuits.
 
-## Project tasks
+## Project task notes (10/11/2022)
     
 We can use Projects to plan out and assign the tasks that need to be completed. As of 10/11/2022 these include the following:
 
@@ -75,4 +75,4 @@ We can use Projects to plan out and assign the tasks that need to be completed. 
     
 There is no need to suffer beautifully and recreate the enitre funding formula in R. As we discussed before, we will use what we have so far as our starting point so that we can focus on building out the dashboard.
     
-We still need to work out a couple kinks so our numbers match ISBE's numbers: 1) rounding errors and 2) the tier funding allocations.
+We still need to work out a couple kinks so our numbers match ISBE's numbers: 1) rounding errors and 2) the tier funding allocations. These are laid out in "Project task notes" and will be updated on github projects.
