@@ -50,7 +50,7 @@ We will discuss the possibility of rolling out the simulator publicly (i.e. a pr
 
 After the Bellwether course, we will all have access to the data and scripts created during the course to follow our own pursuits.
 
-## Project task notes (10/11/2022)
+## Project tasks notes (10/11/2022)
     
 We can use Projects to plan out and assign the tasks that need to be completed. As of 10/11/2022 these include the following:
 
