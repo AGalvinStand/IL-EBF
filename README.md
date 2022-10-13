@@ -1,6 +1,6 @@
 # Illinois Evidence-based funding (EBF) simulator
 
-![](https://media4.giphy.com/media/Ojdip0p80ucZh8WjMO/giphy.gif?cid=790b76116acab4a461f02240148b9daf865621db3535395d&rid=giphy.gif&ct=g)
+![](https://media.giphy.com/media/icgArcntfH5C0/giphy.gif)
 
 ## Goal
 
