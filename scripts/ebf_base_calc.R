@@ -68,11 +68,15 @@ ebf_base_calc <- ebf_base_calc |>
 
 # Pre-Stage 3: Determining Tier -------------------
 
-  # Tier cut offs
+# New appropriation allocation (amt) ------
 
-tier1 <- 0.69
-tier2 <- 0.90
-tier3 <- 1.00
+# Set by legislators - The MFL increase (minum the PTRF, $50) and divided up by tier according to legislation. 
+
+  # Target ratio (where they are supposed to be heading)
+
+tier1 <- 0.69 # ITERATIVE VARIABLE: USE GOAL SEEK TO FIGURE OUT TIER 1 RATIO -------
+tier2 <- 0.90 # FIXED
+tier3 <- 1.00 # FIXED
 
   # Adequacy funding gap
 
@@ -106,11 +110,10 @@ ebf_base_calc <- ebf_base_calc |>
 
 # Tier funding allocation rates
 
-tier1_far <- 0.3
-tier2_far <- 0.0522
-tier3_far <- 0.0205
-tier4_far <- 0.0008
-
+tier1_far <- 0.3 # FIXED AT 30% STATUTORALLY
+tier2_far <- 0.0522 # ITERATIVE VARIABLE: USE GOAL SEEK
+tier3_far <- 0.0205 # ITERATIVE VARIABLE: FORUMALA -  NEW APPROPRIATION ALLOCATION / FINAL ADEQUACY TARGET
+tier4_far <- 0.0008 # ITERATIVE VARIABLE: FORUMALA - NEW APPROPRIATION ALLOCATION / FINAL ADEQUACY TARGET
 # Tier 1 funding gap
 
 ebf_base_calc <- ebf_base_calc |>
@@ -141,11 +144,11 @@ ebf_base_calc <- ebf_base_calc |>
 
   # Set Maximum Funding Per Student for Purposes of Caclulating Final Tier 2 Funding
 
-t1 <- 1465.08
-t2 <- 291.39
-t2fin <- 285.95
-t3 <- 32.29
-t4 <- 1.32
+t1 <- 1465.08 # ITERATIVE VARIABLES: MAX OF PER PUPIL TIER FUNDING
+t2 <- 291.39 # ITERATIVE VARIABLES: MAX OF PER PUPIL TIER FUNDING
+t2fin <- 285.95 # ITERATIVE VARIABLES: MAX OF PER PUPIL TIER FUNDING
+t3 <- 32.29 # ITERATIVE VARIABLES: MAX OF PER PUPIL TIER FUNDING
+t4 <- 1.32 # ITERATIVE VARIABLES: MAX OF PER PUPIL TIER FUNDING
 
   # Step 1
 
