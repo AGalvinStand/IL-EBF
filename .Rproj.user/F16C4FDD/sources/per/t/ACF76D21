@@ -1,0 +1,26 @@
+{
+    "id": "ACF76D21",
+    "path": "~/GitHub/IL-EBF/scripts/targetratio_test.R",
+    "project_path": "scripts/targetratio_test.R",
+    "type": "r_source",
+    "hash": "3000846539",
+    "contents": "",
+    "dirty": false,
+    "created": 1666191861524.0,
+    "source_on_save": false,
+    "relative_order": 1,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "36,25",
+        "scrollLine": "22"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1666200482,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1666200482994,
+    "read_only": false,
+    "read_only_alternatives": []
+}
