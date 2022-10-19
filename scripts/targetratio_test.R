@@ -14,21 +14,25 @@
 
 source("scripts/ebf_base_calc.R")
 
-# 
-
-# step one iterate through percentages to 
-
-test <- ebf_base_calc
-
-test$blah <- ave(test$final_percent_adequacy,test$FUN=cumsum)
-
-test$id <- cumsum(test[13])
-
-ebf_base_calc$gap <- 1
-
+ebf_base_calc <- ebf_base_calc[order(ebf_base_calc$adequacy_funding_level),]
+ebf_base_calc$id <- 1:nrow(ebf_base_calc) 
 
 gap <- function(y) {
-  a<-y
+  ebf_base_calc$blah <- case_when(ebf_base_calc$adequacy_funding_level < y ~ ((y*ebf_base_calc$final_adequacy_target)-ebf_base_calc$final_resources),
+                                FALSE ~ 0)
+  return(sum(ebf_base_calc$blah, na.rm = TRUE))
+}
+
+gap(0.6666971)
+
+tr <- function(x, lower, upper) {
+  optimize(function(y) abs(gap(y) - x), lower=lower, upper=upper, tol = 0.000000000000000000000000000000000000000000000000000000000001)
+}
+
+tr(200000000, 0.600000000000000, .800000000000000)
+
+sum(ebf_base_calc$blah,na.rm = TRUE)
+
   if(ebf_base_calc$final_percent_adequacy < y) {
     return(sum((a*ebf_base_calc$final_adequacy_target)-ebf_base_calc$final_resources))
   }
