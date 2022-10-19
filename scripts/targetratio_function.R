@@ -47,5 +47,5 @@ targetratio(t1fg, # set the first number as the total tier 1 funding gap = (new 
 
 gap(0.6942345) # test out the the funding adequacy level cut off
 
-print(t1fg - gap(0.6942345)) # this will tell you how off we are
+print(t1fg - gap(0.6942345)) # this will tell you how off we are, it should be 0
 
