@@ -3,7 +3,7 @@
     "path": "~/GitHub/IL-EBF/scripts/targetratio_function.R",
     "project_path": "scripts/targetratio_function.R",
     "type": "r_source",
-    "hash": "2201259482",
+    "hash": "1958995466",
     "contents": "",
     "dirty": false,
     "created": 1666191861524.0,
@@ -12,15 +12,15 @@
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "25,36",
-        "scrollLine": "6"
+        "cursorPosition": "57,72",
+        "scrollLine": "37"
     },
     "folds": "",
-    "lastKnownWriteTime": 1666209905,
+    "lastKnownWriteTime": 1666551690,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1666209905158,
+    "last_content_update": 1666551690492,
     "read_only": false,
     "read_only_alternatives": []
 }
