@@ -38,11 +38,11 @@ t1fg <- t1funding/.3 # tier 1 funding gap, which is equal to the  (30% of fundin
 # so that the optimal percent is when the gap minum the gap = 0
 
 targetratio <- function(x, lower, upper) {
-  optimize(function(y) abs(gap(y) - x), lower=lower, upper=upper, tol = 0.000000000000000000000000000000000000000000000000000000000001)
+  optimize(function(y) abs(gap(y) - x), lower=lower, upper=upper, tol = 0.00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001)
 }
 
 tr_table <- targetratio(t1fg, # set the first number as the total tier 1 funding gap = (new appropriation allocation*.5)/.3, in other words the new tier 1 funding (half of the new allocation amount, that's statutory) divided by the tier 1 allocation rate (30% which is statutory) 
-   0.00000000000000, # the low point to be searched (0% adequacy level cut off)
+   0.0000000000000000000000000000000000000000000000000000000000000, # the low point to be searched (0% adequacy level cut off)
    1) # the high point to be searched (100% adequacy level cut off)
 
 t1tr <- tr_table$minimum # Create a variable that pulls the $minimum (i.e the tier 1 target ratio threshold)
@@ -60,8 +60,8 @@ ebf_base_calc <- ebf_base_calc |>
                            adequacy_funding_level > 1 ~ 4,
                            FALSE ~ 0)) |>
   mutate(t1fundinggap = case_when(tiers == 1 ~ (t1tr*final_adequacy_target)-final_resources)) |> 
-  mutate(t1funding = case_when(tiers == 1 ~ t1fundinggap * .3)) |>.
-  mutate(t2fg = case_when(tiers < 3 ~ ((.9*final_adequacy_target)-final_resources-t1funding)-(1- final_adj_lct)))
+  mutate(t1funding = case_when(tiers == 1 ~ t1fundinggap * .3)) |>
+  mutate(t2fg = case_when(tiers < 3 ~ ((.9*final_adequacy_target)-final_resources-t1funding)-(1- local_cap_ratio_capped90)))
 
 # Calculate tier 2 allocation rate
 
@@ -71,6 +71,3 @@ t2funding <- naa*.49
 t2fgsum <- sum(ebf_base_calc$t2fg, na.rm = T)
 t2allocationrate <- t2funding/t2fgsum
 
-### SOMETHING ISN"T WORKING IN THE EQUATIONS ABOVE.....t2allocationrate should be ~ .5216066
-
-t2allocationrate <- t2funding/t2fgsum
