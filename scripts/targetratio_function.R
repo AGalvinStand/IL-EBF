@@ -63,9 +63,9 @@ ebf_base_calc <- ebf_base_calc |>
   mutate(t1funding = case_when(tiers == 1 ~ t1fundinggap * .3)) |>
   mutate(t2fg = case_when(tiers < 3 ~ ((.9*final_adequacy_target)-final_resources-t1funding)-(1- local_cap_ratio_capped90)))
 
+
 # Calculate tier 2 allocation rate
 
-# LOOK INTO THE tier 2 funding/funding gap equations -----
 
 t2funding <- naa*.49
 t2fgsum <- sum(ebf_base_calc$t2fg, na.rm = T)
