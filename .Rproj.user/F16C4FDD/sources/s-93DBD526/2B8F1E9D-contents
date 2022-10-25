@@ -1,0 +1,19 @@
+## Server Outline
+
+# Load in Illinois EBF data
+
+# Define server logic 
+
+# State formula current + dynamic calculations
+
+# Create app data – code for base, weights, and direct funding 
+
+# Create dynamic formula code 
+
+# Calculate new funding amounts for poverty concentration weights 
+
+# Calculate new funding amounts for increasing MFL 
+
+# Define outputs to show in UI
+
+# Poverty concentration weights increase to funding	# Change in MFL 
