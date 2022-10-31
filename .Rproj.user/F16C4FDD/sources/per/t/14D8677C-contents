@@ -1,0 +1,55 @@
+# Purpose ----
+
+  # Clean ISBE Report Card data to extract desired variables
+
+# Author: Chris Poulos
+# Date:   2022-09-30
+
+# Load ----
+
+library(tidyverse)
+library(readxl)
+
+# Set working directory with ISBE report card trend datasets 1996/97-2016/17 (Note: these files are too large to upload on github)
+
+setwd("C:/Users/cdpou/Desktop/isbe_dl")
+
+# ISBE Chicago filter function ----
+
+isbe_clean <- function(year) {
+  
+  sy <- as.character(year)
+  file <- file <- as.character(paste(year,"txt",sep="."))
+  
+  df <- read.csv2(file, header = FALSE, sep = ";", dec = ".") |>
+    mutate(chi = substr(V1,1,9)) |> # Parse the RCDTS (should always be the first column V1) for City of Chicago, Regions (R) = 00, City (C) = 000, and District (D) = 0000 (https://www.isbe.net/Pages/RCDTS-Lookup.aspx)
+    filter(chi == 150162990) # Entered City of Chicago School District 299.
+  
+  write.csv(df,paste("C:/Users/cdpou/Documents/GitHub/irrpp-ed-report/data/isbe/isbe_",year,"_chi.csv",sep=""),row.names=TRUE)
+
+}
+
+# Enter the school year of data ----
+
+isbe_clean(1996)
+isbe_clean(1997)
+isbe_clean(1998)
+isbe_clean(1999)
+isbe_clean(2000)
+isbe_clean(2001)
+isbe_clean(2002)
+isbe_clean(2003)
+isbe_clean(2004)
+isbe_clean(2005)
+isbe_clean(2006)
+isbe_clean(2007)
+isbe_clean(2008)
+isbe_clean(2009)
+isbe_clean(2010)
+isbe_clean(2011)
+isbe_clean(2012)
+isbe_clean(2013)
+isbe_clean(2014)
+isbe_clean(2015)
+isbe_clean(2016)
+

@@ -1,0 +1,4 @@
+# Add weigthed variables, percentales,
+
+library(tidyverse)
+library(readxl)
