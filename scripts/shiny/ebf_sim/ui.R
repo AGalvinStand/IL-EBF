@@ -56,7 +56,7 @@ shinyUI({
                  ),
                  fluidRow(
                    column(12,
-                          radioButtons(inputId = 'cp_wgts', label = 'CP weights',
+                          radioButtons(inputId = 'cp_wgts', label = 'Show weights',
                                        choices = c('Show', 'Hide'), inline = TRUE, selected = 'Hide')
                    )
                  ),
@@ -73,9 +73,16 @@ shinyUI({
                                placement = "bottom")
                    )
                  ),
+                 
+                 br(), 
+                 
+                 fluidRow(
+                   column(5, h4("Race weights"))
+                 ),
+                 
                  fluidRow(
                    column(12,
-                          radioButtons(inputId = 'race_wgt', label = 'Race weights',
+                          radioButtons(inputId = 'race_wgt', label = 'Show weights',
                                        choices = c('Show', 'Hide'), inline = TRUE, selected = 'Hide')
                    )
                  ),
