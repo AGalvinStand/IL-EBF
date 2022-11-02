@@ -33,7 +33,7 @@ shinyUI({
       fluidRow(
         column(2,
                wellPanel(
-                 img(src = "testimage.jpg", height = 90, width = 125, align = "center"),
+                 img(src = "scrooge.gif", height = 200, width = 250, align = "center"),
                  h3(strong("Adequacy Target and Minimum Funding Level Simulations")),
                  br(),
                  h4(em("Explore the policy choices below to see how they effect the amount of funding required to fully fund Illinois schools and how much yearly funding is necessary to get there!")),
@@ -79,7 +79,7 @@ shinyUI({
                  br(), 
                  
                  fluidRow(
-                   column(12, h4(strong("Race weights")))
+                   column(12, h4(strong("Race weights"))) # make it clear this is a suggestion/hypothetical - compare against cp.
                  ),
                  
                  fluidRow(
@@ -118,16 +118,19 @@ shinyUI({
                  h3("Topline Outputs"),
                  h4("To be included:"),
                  h5("1. Total funding"),
-                 h5("2. Yearly minimum funding requirements"),
+                 h5("2. Yearly minimum funding requirements"), # add clarification here make it obvious
                  h5("3. Percent of students in underfunded districts"),
                  h5("4. Race gaps"),
                  h5("5. Per pupil funding increases"),
                  h5("6. Print out PDF for your district"),
                  tableOutput("toplines")
                ) # close well panel
+               
         ) # close text output column
+    
         
-        
+      ## --- ADD DOWNLOAD OPTION    
+    
       ) # close page fluidrow
       
       
