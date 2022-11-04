@@ -19,6 +19,8 @@ options(shiny.trace = TRUE)
 # Dashboard header: EBF Simulator
 # Create dashboard body
 
+ebf_base_calc_cp <- read_rds("data/raw/ebf_base_calc_conpov.rds")
+
 shinyUI({
   
   header <- dashboardHeader(
