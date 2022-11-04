@@ -636,13 +636,3 @@ rm(il_fy22_additional_investments,
    intervention_teacher,
    per_pupil_support,
    summer_school_teacher)
-
-il_fy22_additional_investments |>
-  filter(ai_total_cost<750000) |>
-ggplot() +
-  geom_point(aes(x=li_percent, y=ai_total_cost))
-
-il_fy22_additional_investments |>
-  filter(ai_total_cost<750000) |>
-  ggplot() +
-  geom_point(aes(x=li_percent, y=ai_w_cp_total_cost))
