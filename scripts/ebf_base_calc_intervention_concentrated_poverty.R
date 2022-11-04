@@ -69,9 +69,72 @@ ebf_base_calc_conpov <- ebf_base_calc_conpov |>
 
 # Pre-Stage 3: Determining Tier -------------------
 
+# tier 1 target ratio threshold function
+
+# tier 1 target ratio threshold function
+
+# This will return a sum of the optimal cut off percent. 
+# It does so by summing the funding gap model - 
+# sum of (tier 1 target ratio * final adequacy level)-final resources for each 
+# district below the cut off percent selected.
+
+gap <- function(y) {
+  ebf_base_calc_conpov$t1cutoff <- case_when(ebf_base_calc_conpov$final_percent_adequacy < y ~ ((y*ebf_base_calc_conpov$final_adequacy_target)-ebf_base_calc_conpov$final_resources),
+                                      FALSE ~ 0)
+  return(sum(ebf_base_calc_conpov$t1cutoff, na.rm = TRUE))
+}
+
+# Set the variables for tier funding - only hard code the statutorily set
+# variables and the new allocation amount (subject to change via the 
+# legislature each year).
+
+naa <- 300000000 # new appropriation allocation
+t1funding <- naa*.5 # tier 1 new appropriation allocation (50% of NAA, statutorily set)
+t1fg <- t1funding/.3 # tier 1 funding gap, which is equal to the  (30% of funding gap)
+t2funding <- naa*.49
+t3funding <- naa*.009
+t4funding <- naa*.001
+
+# This plugs in percentages from 0 to 1 until it finds the optimal cut off, 
+# which is the funding gap (see below for equation) minus x (the funding gap)
+# so that the optimal percent is when the gap minum the gap = 0
+
+targetratio <- function(x, lower, upper) {
+  optimize(function(y) abs(gap(y) - x), lower=lower, upper=upper, tol = 0.00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001)
+}
+
+tr_table <- targetratio(t1fg, # set the first number as the total tier 1 funding gap = (new appropriation allocation*.5)/.3, in other words the new tier 1 funding (half of the new allocation amount, that's statutory) divided by the tier 1 allocation rate (30% which is statutory) 
+                        0.0000000000000000000000000000000000000000000000000000000000000, # the low point to be searched (0% adequacy level cut off)
+                        1) # the high point to be searched (100% adequacy level cut off)
+
+t1tr <- tr_table$minimum # Create a variable that pulls the $minimum (i.e the tier 1 target ratio threshold)
+
+gap(t1tr) # test out the the funding adequacy level cut off
+
+print(t1fg - gap(t1tr)) # this will tell you how off we are, it should be 0
+
+# use the target ratio to assign tiers and tier2 funding gap----
+
+ebf_base_calc_conpov <- ebf_base_calc_conpov |>
+  mutate(tiers = case_when(final_percent_adequacy < as.numeric(t1tr) ~ 1,
+                           final_percent_adequacy > as.numeric(t1tr) & final_percent_adequacy < .9 ~ 2,
+                           final_percent_adequacy > .9 & final_percent_adequacy < 1 ~ 3,
+                           final_percent_adequacy > 1 ~ 4,
+                           FALSE ~ 0)) |>
+  mutate(t1fundinggap = case_when(tiers == 1 ~ (t1tr*final_adequacy_target)-final_resources)) |> 
+  mutate(t1funding = case_when(tiers == 1 ~ t1fundinggap * .3)) |>
+  mutate(t2fg = case_when(tiers < 3 ~ ((.9*final_adequacy_target)-final_resources-t1funding)-(1- local_cap_ratio_capped90)))
+
+
+# Calculate tier 2 allocation rate
+
+
+t2fgsum <- sum(ebf_base_calc_conpov$t2fg, na.rm = T)
+t2allocationrate <- t2funding/t2fgsum
+
   # Tier cut offs
 
-tier1 <- 0.69
+tier1 <- as.numeric(t1tr)
 tier2 <- 0.90
 tier3 <- 1.00
 
@@ -105,12 +168,19 @@ ebf_base_calc_conpov <- ebf_base_calc_conpov |>
 
 # Stage 3: Determining Adequacy Level (Tier funding) -------------
 
+ebf_base_calc_conpov <- ebf_base_calc_conpov |>
+  mutate(tier3finaladequacy = case_when(tier == 3 ~ final_adequacy_target,
+                                        TRUE ~ 0),
+         tier4finaladequacy = case_when(tier == 4 ~ final_adequacy_target,
+                                        TRUE ~ 0)
+  )
+
 # Tier funding allocation rates
 
 tier1_far <- 0.3
-tier2_far <- 0.0522
-tier3_far <- 0.0205
-tier4_far <- 0.0008
+tier2_far <- as.numeric(t2allocationrate)
+tier3_far <- t3funding/sum(ebf_base_calc_conpov$tier3finaladequacy)
+tier4_far <- t4funding/sum(ebf_base_calc_conpov$tier4finaladequacy)
 
 # Tier 1 funding gap
 
@@ -121,8 +191,7 @@ ebf_base_calc_conpov <- ebf_base_calc_conpov |>
 # Tier 1 funding
 
 ebf_base_calc_conpov <- ebf_base_calc_conpov |>
-  mutate(tier1_funding = 
-           tier1flag * (tier1_funding_gap*tier1_far))
+  mutate(tier1_funding = tier1flag * (tier1_funding_gap*tier1_far))
 
 ebf_base_calc_conpov <- ebf_base_calc_conpov |>
   mutate(tier1_perpupil =
@@ -136,54 +205,6 @@ ebf_base_calc_conpov <- ebf_base_calc_conpov |>
   mutate(tier2_funding_gap = 
            ifelse(tier == 1 | tier ==2,
                   (((tier2*final_adequacy_target)-final_resources-tier1_funding_gap)*(1-local_cap_ratio_capped90)),
-                  0))
-
-# Tier 2 funding 
-
-  # Set Maximum Funding Per Student for Purposes of Caclulating Final Tier 2 Funding
-
-t1 <- 1465.08
-t2 <- 291.39
-t2fin <- 285.95
-t3 <- 32.29
-t4 <- 1.32
-
-  # Step 1
-
-ebf_base_calc_conpov <- ebf_base_calc_conpov |>
-  mutate(tier2_funding_step1 =
-           tier2_funding_gap * tier2_far)
-
-  # Original Tier 2 Per Student
-
-ebf_base_calc_conpov <- ebf_base_calc_conpov |>
-  mutate(tier2_perpupil_orig =
-           ifelse(total_ase>0,
-                  tier2_funding_step1/total_ase,
-                  0))
-
-  # Step 2
-
-ebf_base_calc_conpov <- ebf_base_calc_conpov |>
-  mutate(tier2_funding_step2 =
-           ifelse(tier == 2 & tier2_perpupil_orig<t3,
-                  t3*total_ase,
-                  tier2_funding_step1))
-
-  # Step 3
-
-orig_revised_step2_funding <- 0.981
-
-ebf_base_calc_conpov <- ebf_base_calc_conpov |>
-  mutate(tier2_funding_step3 =
-           tier2_funding_step2 * orig_revised_step2_funding)
-           
-  # Final Tier 2 Per Student
-
-ebf_base_calc_conpov <- ebf_base_calc_conpov |>
-  mutate(tier2_perpupil_final =
-           ifelse(total_ase>0,
-                  tier2_funding_step3/total_ase,
                   0))
 
 # Tier 3 funding
@@ -207,9 +228,59 @@ ebf_base_calc_conpov <- ebf_base_calc_conpov |>
                   0))
 
 ebf_base_calc_conpov <- ebf_base_calc_conpov |>
-  mutate(tier3_perpupil =
+  mutate(tier4_perpupil =
            ifelse(total_ase>0,
                   tier4_funding/total_ase,
+                  0))
+
+# Tier 2 funding 
+
+  # Set Maximum Funding Per Student for Purposes of Caclulating Final Tier 2 Funding
+
+t1 <- max(ebf_base_calc_conpov$tier1_perpupil)
+# t2 <- 291.39 # to be determined below
+# t2fin <- 285.95 #to be determined below
+ t3 <- max(ebf_base_calc_conpov$tier3_perpupil)
+ t4 <- max(ebf_base_calc_conpov$tier4_perpupil)
+
+  # Step 1
+
+ebf_base_calc_conpov <- ebf_base_calc_conpov |>
+  mutate(tier2_funding_step1 =
+           tier2_funding_gap * tier2_far)
+
+  # Original Tier 2 Per Student
+
+ebf_base_calc_conpov <- ebf_base_calc_conpov |>
+  mutate(tier2_perpupil_orig =
+           ifelse(total_ase>0,
+                  tier2_funding_step1/total_ase,
+                  0))
+
+t2 <- max(ebf_base_calc_conpov$tier2_perpupil_orig)
+
+  # Step 2
+
+ebf_base_calc_conpov <- ebf_base_calc_conpov |>
+  mutate(tier2_funding_step2 =
+           ifelse(tier == 2 & tier2_perpupil_orig<t3,
+                  t3*total_ase,
+                  tier2_funding_step1))
+
+  # Step 3
+
+orig_revised_step2_funding <- 0.981 # don't know how this is set.....
+
+ebf_base_calc_conpov <- ebf_base_calc_conpov |>
+  mutate(tier2_funding_step3 =
+           tier2_funding_step2 * orig_revised_step2_funding)
+           
+  # Final Tier 2 Per Student
+
+ebf_base_calc_conpov <- ebf_base_calc_conpov |>
+  mutate(tier2_perpupil_final =
+           ifelse(total_ase>0,
+                  tier2_funding_step3/total_ase,
                   0))
 
 # Calculating total state contribution --------------
@@ -244,21 +315,7 @@ ebf_base_calc_conpov <- ebf_base_calc_conpov |>
 #       contribution plus the EBF adjustment. For the time being I am going to
 #       ignore this, but it is something to look into. (Chris Poulos, 8/26/22)
 
-rm(cwi,
-   il_fy22_region_factor_clean,
-   il_fy22_region_factor_raw,
-   new_names,
-   orig_revised_step2_funding,
-   t1,
-   t2,
-   t2fin,
-   t3,
-   t4,
-   tier1,
-   tier1_far,
-   tier2,
-   tier2_far,
-   tier3,
-   tier3_far,
-   tier4_far)
 
+
+rm(list=setdiff(ls(), "ebf_base_calc_conpov"))
+write_rds(ebf_base_calc_conpov,"data/raw/ebf_base_calc_conpov.rds")
