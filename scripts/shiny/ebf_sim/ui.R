@@ -12,6 +12,7 @@ library(DT)
 library(leaflet)
 require(scales)
 library(plotly)
+library(tidyverse)
 
 options(shiny.trace = TRUE)
 
