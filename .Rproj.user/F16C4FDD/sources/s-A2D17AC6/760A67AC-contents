@@ -19,7 +19,7 @@ options(shiny.trace = TRUE)
 # Dashboard header: EBF Simulator
 # Create dashboard body
 
-ebf_base_calc_conpov <- read_rds("data/raw/ebf_base_calc_conpov.rds")
+ebf_base_calc_conpov <- read_rds("data/ebf_base_calc_conpov.rds")
 
 shinyUI({
   
@@ -45,7 +45,6 @@ shinyUI({
                  fluidRow(
                    column(8,
                           numericInput("years", "Year:", value = 2027, step = 1, min = 2027, max = 3000, width = '700px'),
-                          verbatimTextOutput("year_value"),
                           id = "year_id",
                           bsTooltip("year_id", "Legislation currently designates 2027 as the target year for full-funding.", 
                                     placement = "right"),

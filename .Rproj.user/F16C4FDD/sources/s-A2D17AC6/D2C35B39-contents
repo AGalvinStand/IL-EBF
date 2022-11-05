@@ -33,7 +33,7 @@ shinyServer(function(input, output) {
 
    # 2. EBF with concentrated poverty weights
 
-   ebf_base_calc_conpov <- read_rds("data/raw/ebf_base_calc_conpov.rds")
+   ebf_base_calc_conpov <- read_rds("data/ebf_base_calc_conpov.rds")
 
    # 3. CREATE RDS FOR Race weights ----
 
@@ -79,269 +79,269 @@ shinyServer(function(input, output) {
 
    # create reactive dataframe for year input ----------
 
-   # ebfsim2 <- reactive({
-   # 
-   # # Pre-Stage 3: Determining Tier
-   # 
-   # # Tier 1 target ratio threshold function
-   # 
-   # # This will return a sum of the optimal cut off percent.
-   # # It does so by summing the funding gap model -
-   # # sum of (tier 1 target ratio * final adequacy level)-final resources for each
-   # # district below the cut off percent selected.
-   # 
-   # gap <- function(y) {
-   #   ebfsim$t1cutoff <- case_when(ebfsim$final_percent_adequacy < y ~ ((y*ebfsim$final_adequacy_target)-ebfsim$final_resources),
-   #                                              FALSE ~ 0)
-   #   return(sum(ebfsim$t1cutoff, na.rm = TRUE))
-   # }
-   # 
-   # # Set the variables for tier funding - only hard code the statutorily set
-   # # variables and the new allocation amount (subject to change via the
-   # # legislature each year).
-   # 
-   # # Determine total adequacy gap
-   # 
-   # total_adequacy_gap <- sum(ebfsim$final_adequacy_target) - sum(ebfsim$final_resources)
-   # 
-   # goal_year <- as.numeric(output$year_value)
-   # 
-   # # #TEST
-   # #
-   # # goal_year <- 2027
-   # #
-   # # #END TEST
-   # 
-   # current_year <- as.numeric(format(Sys.time(), "%Y"))
-   # 
-   # years_to_goal <- goal_year - current_year
-   # 
-   # minimum_yearly_funding <- total_adequacy_gap/years_to_goal
-   # 
-   # naa <- minimum_yearly_funding # new appropriation allocation (if we want full funding by specified date)
-   # t1funding <- naa*.5 # tier 1 new appropriation allocation (50% of NAA, statutorily set)
-   # t1fg <- t1funding/.3 # tier 1 funding gap, which is equal to the  (30% of funding gap)
-   # t2funding <- naa*.49
-   # t3funding <- naa*.009
-   # t4funding <- naa*.001
-   # 
-   # # This plugs in percentages from 0 to 1 until it finds the optimal cut off,
-   # # which is the funding gap (see below for equation) minus x (the funding gap)
-   # # so that the optimal percent is when the gap minum the gap = 0
-   # 
-   # targetratio <- function(x, lower, upper) {
-   #   optimize(function(y) abs(gap(y) - x), lower=lower, upper=upper, tol = 0.00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001)
-   # }
-   # 
-   # tr_table <- targetratio(t1fg, # set the first number as the total tier 1 funding gap = (new appropriation allocation*.5)/.3, in other words the new tier 1 funding (half of the new allocation amount, that's statutory) divided by the tier 1 allocation rate (30% which is statutory)
-   #                         0.0000000000000000000000000000000000000000000000000000000000000, # the low point to be searched (0% adequacy level cut off)
-   #                         1) # the high point to be searched (100% adequacy level cut off)
-   # 
-   # t1tr <- tr_table$minimum # Create a variable that pulls the $minimum (i.e the tier 1 target ratio threshold)
-   # 
-   # gap(t1tr) # test out the the funding adequacy level cut off
-   # 
-   # print(t1fg - gap(t1tr)) # this will tell you how off we are, it should be 0
-   # 
-   # # use the target ratio to assign tiers and tier2 funding gap----
-   # 
-   # ebfsim <- ebfsim |>
-   #   mutate(tiers = case_when(final_percent_adequacy < as.numeric(t1tr) ~ 1,
-   #                            final_percent_adequacy > as.numeric(t1tr) & final_percent_adequacy < .9 ~ 2,
-   #                            final_percent_adequacy > .9 & final_percent_adequacy < 1 ~ 3,
-   #                            final_percent_adequacy > 1 ~ 4,
-   #                            FALSE ~ 0)) |>
-   #   mutate(t1fundinggap = case_when(tiers == 1 ~ (t1tr*final_adequacy_target)-final_resources)) |>
-   #   mutate(t1funding = case_when(tiers == 1 ~ t1fundinggap * .3)) |>
-   #   mutate(t2fg = case_when(tiers < 3 ~ ((.9*final_adequacy_target)-final_resources-t1funding)-(1- local_cap_ratio_capped90)))
-   # 
-   # 
-   # # Calculate tier 2 allocation rate
-   # 
-   # 
-   # t2fgsum <- sum(ebfsim$t2fg, na.rm = T)
-   # t2allocationrate <- t2funding/t2fgsum
-   # 
-   # # Tier cut offs
-   # 
-   # tier1 <- as.numeric(t1tr)
-   # tier2 <- 0.90
-   # tier3 <- 1.00
-   # 
-   # # Adequacy funding gap
-   # 
-   # ebfsim <- ebfsim |>
-   #   mutate(adequacy_funding_gap =
-   #            final_adequacy_target - final_resources)
-   # 
-   # # Adequacy Funding Level
-   # 
-   # ebfsim <- ebfsim |>
-   #   mutate(adequacy_funding_level =
-   #            final_resources / final_adequacy_target)
-   # 
-   # # Assign tiers based on Adequacy Funding Level
-   # 
-   # ebfsim <- ebfsim |>
-   #   mutate(tier =
-   #            case_when(adequacy_funding_level < .69 ~ 1,
-   #                      adequacy_funding_level < .9 & adequacy_funding_level >= .69 ~ 2,
-   #                      adequacy_funding_level < 1 & adequacy_funding_level >= .9 ~ 3,
-   #                      adequacy_funding_level >= 1 ~ 4))
-   # 
-   # # Flag tier 1
-   # 
-   # ebfsim <- ebfsim |>
-   #   mutate(tier1flag =
-   #            case_when(tier == 1 ~ 1,
-   #                      tier > 1 ~ 0))
-   # 
-   # # Stage 3: Determining Adequacy Level (Tier funding) -------------
-   # 
-   # ebfsim <- ebfsim |>
-   #   mutate(tier3finaladequacy = case_when(tier == 3 ~ final_adequacy_target,
-   #                                         TRUE ~ 0),
-   #          tier4finaladequacy = case_when(tier == 4 ~ final_adequacy_target,
-   #                                         TRUE ~ 0)
-   #   )
-   # 
-   # # Tier funding allocation rates
-   # 
-   # tier1_far <- 0.3
-   # tier2_far <- as.numeric(t2allocationrate)
-   # tier3_far <- t3funding/sum(ebfsim$tier3finaladequacy)
-   # tier4_far <- t4funding/sum(ebfsim$tier4finaladequacy)
-   # 
-   # # Tier 1 funding gap
-   # 
-   # ebfsim <- ebfsim |>
-   #   mutate(tier1_funding_gap =
-   #            ((tier1*final_adequacy_target)-final_resources) * tier1flag)
-   # 
-   # # Tier 1 funding
-   # 
-   # ebfsim <- ebfsim |>
-   #   mutate(tier1_funding = tier1flag * (tier1_funding_gap*tier1_far))
-   # 
-   # ebfsim <- ebfsim |>
-   #   mutate(tier1_perpupil =
-   #            ifelse(total_ase > 0,
-   #                   tier1_funding/total_ase,
-   #                   0))
-   # 
-   # # Tier 2 funding gap
-   # 
-   # ebfsim <- ebfsim |>
-   #   mutate(tier2_funding_gap =
-   #            ifelse(tier == 1 | tier ==2,
-   #                   (((tier2*final_adequacy_target)-final_resources-tier1_funding_gap)*(1-local_cap_ratio_capped90)),
-   #                   0))
-   # 
-   # # Tier 3 funding
-   # 
-   # ebfsim <- ebfsim |>
-   #   mutate(tier3_funding =
-   #            ifelse(tier == 3, tier3_far*final_adequacy_target,
-   #                   0))
-   # 
-   # ebfsim <- ebfsim |>
-   #   mutate(tier3_perpupil =
-   #            ifelse(total_ase>0,
-   #                   tier3_funding/total_ase,
-   #                   0))
-   # 
-   # # Tier 4 funding
-   # 
-   # ebfsim <- ebfsim |>
-   #   mutate(tier4_funding =
-   #            ifelse(tier == 4, tier4_far*final_adequacy_target,
-   #                   0))
-   # 
-   # ebfsim <- ebfsim |>
-   #   mutate(tier4_perpupil =
-   #            ifelse(total_ase>0,
-   #                   tier4_funding/total_ase,
-   #                   0))
-   # 
-   # # Tier 2 funding
-   # 
-   # # Set Maximum Funding Per Student for Purposes of Caclulating Final Tier 2 Funding
-   # 
-   # t1 <- max(ebfsim$tier1_perpupil)
-   # # t2 <- 291.39 # to be determined below
-   # # t2fin <- 285.95 #to be determined below
-   # t3 <- max(ebfsim$tier3_perpupil)
-   # t4 <- max(ebfsim$tier4_perpupil)
-   # 
-   # # Step 1
-   # 
-   # ebfsim <- ebfsim |>
-   #   mutate(tier2_funding_step1 =
-   #            tier2_funding_gap * tier2_far)
-   # 
-   # # Original Tier 2 Per Student
-   # 
-   # ebfsim <- ebfsim |>
-   #   mutate(tier2_perpupil_orig =
-   #            ifelse(total_ase>0,
-   #                   tier2_funding_step1/total_ase,
-   #                   0))
-   # 
-   # t2 <- max(ebfsim$tier2_perpupil_orig)
-   # 
-   # # Step 2
-   # 
-   # ebfsim <- ebfsim |>
-   #   mutate(tier2_funding_step2 =
-   #            ifelse(tier == 2 & tier2_perpupil_orig<t3,
-   #                   t3*total_ase,
-   #                   tier2_funding_step1))
-   # 
-   # # Step 3
-   # 
-   # orig_revised_step2_funding <- 0.981 # don't know how this is set.....
-   # 
-   # ebfsim <- ebfsim |>
-   #   mutate(tier2_funding_step3 =
-   #            tier2_funding_step2 * orig_revised_step2_funding)
-   # 
-   # # Final Tier 2 Per Student
-   # 
-   # ebfsim <- ebfsim |>
-   #   mutate(tier2_perpupil_final =
-   #            ifelse(total_ase>0,
-   #                   tier2_funding_step3/total_ase,
-   #                   0))
-   # 
-   # # Calculating total state contribution --------------
-   # 
-   # # Calculated new FY Funding
-   # 
-   # ebfsim <- ebfsim |>
-   #   mutate(new_fy_funding =
-   #            tier1_funding +
-   #            tier2_funding_step3 +
-   #            tier3_funding +
-   #            tier4_funding)
-   # 
-   # # Calculated new FY Funding (per pupil)
-   # 
-   # ebfsim <- ebfsim |>
-   #   mutate(new_fy_funding_perpupil =
-   #            ifelse(total_ase >0,
-   #                   new_fy_funding/total_ase,
-   #                   0))
-   # 
-   # # Total gross state FY contribution
-   # 
-   # ebfsim <- ebfsim |>
-   #   mutate(gross_fy_funding =
-   #            new_fy_funding +
-   #            base_funding_minimum)
-   # 
-   # ebfsim
-   # 
-   # })
+   ebfsim2 <- reactive({
+
+   # Pre-Stage 3: Determining Tier
+
+   # Tier 1 target ratio threshold function
+
+   # This will return a sum of the optimal cut off percent.
+   # It does so by summing the funding gap model -
+   # sum of (tier 1 target ratio * final adequacy level)-final resources for each
+   # district below the cut off percent selected.
+
+   gap <- function(y) {
+     ebfsim$t1cutoff <- case_when(ebfsim$final_percent_adequacy < y ~ ((y*ebfsim$final_adequacy_target)-ebfsim$final_resources),
+                                                FALSE ~ 0)
+     return(sum(ebfsim$t1cutoff, na.rm = TRUE))
+   }
+
+   # Set the variables for tier funding - only hard code the statutorily set
+   # variables and the new allocation amount (subject to change via the
+   # legislature each year).
+
+   # Determine total adequacy gap
+
+   total_adequacy_gap <- sum(ebfsim$final_adequacy_target) - sum(ebfsim$final_resources)
+
+   goal_year <- as.numeric(output$year_value)
+
+   # #TEST
+   #
+   # goal_year <- 2027
+   #
+   # #END TEST
+
+   current_year <- as.numeric(format(Sys.time(), "%Y"))
+
+   years_to_goal <- goal_year - current_year
+
+   minimum_yearly_funding <- total_adequacy_gap/years_to_goal
+
+   naa <- minimum_yearly_funding # new appropriation allocation (if we want full funding by specified date)
+   t1funding <- naa*.5 # tier 1 new appropriation allocation (50% of NAA, statutorily set)
+   t1fg <- t1funding/.3 # tier 1 funding gap, which is equal to the  (30% of funding gap)
+   t2funding <- naa*.49
+   t3funding <- naa*.009
+   t4funding <- naa*.001
+
+   # This plugs in percentages from 0 to 1 until it finds the optimal cut off,
+   # which is the funding gap (see below for equation) minus x (the funding gap)
+   # so that the optimal percent is when the gap minum the gap = 0
+
+   targetratio <- function(x, lower, upper) {
+     optimize(function(y) abs(gap(y) - x), lower=lower, upper=upper, tol = 0.00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001)
+   }
+
+   tr_table <- targetratio(t1fg, # set the first number as the total tier 1 funding gap = (new appropriation allocation*.5)/.3, in other words the new tier 1 funding (half of the new allocation amount, that's statutory) divided by the tier 1 allocation rate (30% which is statutory)
+                           0.0000000000000000000000000000000000000000000000000000000000000, # the low point to be searched (0% adequacy level cut off)
+                           1) # the high point to be searched (100% adequacy level cut off)
+
+   t1tr <- tr_table$minimum # Create a variable that pulls the $minimum (i.e the tier 1 target ratio threshold)
+
+   gap(t1tr) # test out the the funding adequacy level cut off
+
+   print(t1fg - gap(t1tr)) # this will tell you how off we are, it should be 0
+
+   # use the target ratio to assign tiers and tier2 funding gap----
+
+   ebfsim <- ebfsim |>
+     mutate(tiers = case_when(final_percent_adequacy < as.numeric(t1tr) ~ 1,
+                              final_percent_adequacy > as.numeric(t1tr) & final_percent_adequacy < .9 ~ 2,
+                              final_percent_adequacy > .9 & final_percent_adequacy < 1 ~ 3,
+                              final_percent_adequacy > 1 ~ 4,
+                              FALSE ~ 0)) |>
+     mutate(t1fundinggap = case_when(tiers == 1 ~ (t1tr*final_adequacy_target)-final_resources)) |>
+     mutate(t1funding = case_when(tiers == 1 ~ t1fundinggap * .3)) |>
+     mutate(t2fg = case_when(tiers < 3 ~ ((.9*final_adequacy_target)-final_resources-t1funding)-(1- local_cap_ratio_capped90)))
+
+
+   # Calculate tier 2 allocation rate
+
+
+   t2fgsum <- sum(ebfsim$t2fg, na.rm = T)
+   t2allocationrate <- t2funding/t2fgsum
+
+   # Tier cut offs
+
+   tier1 <- as.numeric(t1tr)
+   tier2 <- 0.90
+   tier3 <- 1.00
+
+   # Adequacy funding gap
+
+   ebfsim <- ebfsim |>
+     mutate(adequacy_funding_gap =
+              final_adequacy_target - final_resources)
+
+   # Adequacy Funding Level
+
+   ebfsim <- ebfsim |>
+     mutate(adequacy_funding_level =
+              final_resources / final_adequacy_target)
+
+   # Assign tiers based on Adequacy Funding Level
+
+   ebfsim <- ebfsim |>
+     mutate(tier =
+              case_when(adequacy_funding_level < .69 ~ 1,
+                        adequacy_funding_level < .9 & adequacy_funding_level >= .69 ~ 2,
+                        adequacy_funding_level < 1 & adequacy_funding_level >= .9 ~ 3,
+                        adequacy_funding_level >= 1 ~ 4))
+
+   # Flag tier 1
+
+   ebfsim <- ebfsim |>
+     mutate(tier1flag =
+              case_when(tier == 1 ~ 1,
+                        tier > 1 ~ 0))
+
+   # Stage 3: Determining Adequacy Level (Tier funding) -------------
+
+   ebfsim <- ebfsim |>
+     mutate(tier3finaladequacy = case_when(tier == 3 ~ final_adequacy_target,
+                                           TRUE ~ 0),
+            tier4finaladequacy = case_when(tier == 4 ~ final_adequacy_target,
+                                           TRUE ~ 0)
+     )
+
+   # Tier funding allocation rates
+
+   tier1_far <- 0.3
+   tier2_far <- as.numeric(t2allocationrate)
+   tier3_far <- t3funding/sum(ebfsim$tier3finaladequacy)
+   tier4_far <- t4funding/sum(ebfsim$tier4finaladequacy)
+
+   # Tier 1 funding gap
+
+   ebfsim <- ebfsim |>
+     mutate(tier1_funding_gap =
+              ((tier1*final_adequacy_target)-final_resources) * tier1flag)
+
+   # Tier 1 funding
+
+   ebfsim <- ebfsim |>
+     mutate(tier1_funding = tier1flag * (tier1_funding_gap*tier1_far))
+
+   ebfsim <- ebfsim |>
+     mutate(tier1_perpupil =
+              ifelse(total_ase > 0,
+                     tier1_funding/total_ase,
+                     0))
+
+   # Tier 2 funding gap
+
+   ebfsim <- ebfsim |>
+     mutate(tier2_funding_gap =
+              ifelse(tier == 1 | tier ==2,
+                     (((tier2*final_adequacy_target)-final_resources-tier1_funding_gap)*(1-local_cap_ratio_capped90)),
+                     0))
+
+   # Tier 3 funding
+
+   ebfsim <- ebfsim |>
+     mutate(tier3_funding =
+              ifelse(tier == 3, tier3_far*final_adequacy_target,
+                     0))
+
+   ebfsim <- ebfsim |>
+     mutate(tier3_perpupil =
+              ifelse(total_ase>0,
+                     tier3_funding/total_ase,
+                     0))
+
+   # Tier 4 funding
+
+   ebfsim <- ebfsim |>
+     mutate(tier4_funding =
+              ifelse(tier == 4, tier4_far*final_adequacy_target,
+                     0))
+
+   ebfsim <- ebfsim |>
+     mutate(tier4_perpupil =
+              ifelse(total_ase>0,
+                     tier4_funding/total_ase,
+                     0))
+
+   # Tier 2 funding
+
+   # Set Maximum Funding Per Student for Purposes of Caclulating Final Tier 2 Funding
+
+   t1 <- max(ebfsim$tier1_perpupil)
+   # t2 <- 291.39 # to be determined below
+   # t2fin <- 285.95 #to be determined below
+   t3 <- max(ebfsim$tier3_perpupil)
+   t4 <- max(ebfsim$tier4_perpupil)
+
+   # Step 1
+
+   ebfsim <- ebfsim |>
+     mutate(tier2_funding_step1 =
+              tier2_funding_gap * tier2_far)
+
+   # Original Tier 2 Per Student
+
+   ebfsim <- ebfsim |>
+     mutate(tier2_perpupil_orig =
+              ifelse(total_ase>0,
+                     tier2_funding_step1/total_ase,
+                     0))
+
+   t2 <- max(ebfsim$tier2_perpupil_orig)
+
+   # Step 2
+
+   ebfsim <- ebfsim |>
+     mutate(tier2_funding_step2 =
+              ifelse(tier == 2 & tier2_perpupil_orig<t3,
+                     t3*total_ase,
+                     tier2_funding_step1))
+
+   # Step 3
+
+   orig_revised_step2_funding <- 0.981 # don't know how this is set.....
+
+   ebfsim <- ebfsim |>
+     mutate(tier2_funding_step3 =
+              tier2_funding_step2 * orig_revised_step2_funding)
+
+   # Final Tier 2 Per Student
+
+   ebfsim <- ebfsim |>
+     mutate(tier2_perpupil_final =
+              ifelse(total_ase>0,
+                     tier2_funding_step3/total_ase,
+                     0))
+
+   # Calculating total state contribution --------------
+
+   # Calculated new FY Funding
+
+   ebfsim <- ebfsim |>
+     mutate(new_fy_funding =
+              tier1_funding +
+              tier2_funding_step3 +
+              tier3_funding +
+              tier4_funding)
+
+   # Calculated new FY Funding (per pupil)
+
+   ebfsim <- ebfsim |>
+     mutate(new_fy_funding_perpupil =
+              ifelse(total_ase >0,
+                     new_fy_funding/total_ase,
+                     0))
+
+   # Total gross state FY contribution
+
+   ebfsim <- ebfsim |>
+     mutate(gross_fy_funding =
+              new_fy_funding +
+              base_funding_minimum)
+
+   ebfsim
+
+   })
 
  # Use reactive dataframes to shape outputs ----
 
@@ -352,7 +352,7 @@ shinyServer(function(input, output) {
 
      output$Scatterplot <- renderPlotly({
        ggplotly(
-         ggplot(ebfsim,
+         ggplot(ebfsim2(),
                 aes(x=sum(final_adequacy_target))) +
            geom_bar()
        )
