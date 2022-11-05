@@ -52,6 +52,8 @@ ebf_base_calc_conpov <- ebf_base_calc_conpov |>
 
 ebf_base_calc_conpov <- ebf_base_calc_conpov |>
   mutate(final_adequacy_target =
+           ((ci_totalcost + total_psi_cwi + ai_cost)*region_factor_ebm) + total_psi_nocwi,
+         final_adequacy_target_cp =
            ((ci_totalcost + total_psi_cwi + ai_w_cp_total_cost)*region_factor_ebm) + total_psi_nocwi)
 
   # Per pupil final adequacy target
