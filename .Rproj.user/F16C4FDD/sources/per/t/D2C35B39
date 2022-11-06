@@ -3,7 +3,7 @@
     "path": "~/GitHub/IL-EBF/scripts/shiny/ebf_sim/server.R",
     "project_path": "scripts/shiny/ebf_sim/server.R",
     "type": "r_source",
-    "hash": "3685183934",
+    "hash": "1668216703",
     "contents": "",
     "dirty": false,
     "created": 1667598504530.0,
@@ -12,15 +12,15 @@
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "308,0",
-        "scrollLine": "285"
+        "cursorPosition": "298,51",
+        "scrollLine": "282"
     },
     "folds": "",
-    "lastKnownWriteTime": 1667693199,
+    "lastKnownWriteTime": 1667766630,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1667693199765,
+    "last_content_update": 1667766630702,
     "read_only": false,
     "read_only_alternatives": []
 }
