@@ -106,18 +106,17 @@ mutate(tiers = case_when(final_percent_adequacy < as.numeric(t1tr) ~ 1,
                      adequacy_funding_level < 1 & adequacy_funding_level >= .9 ~ 3,
                      adequacy_funding_level >= 1 ~ 4)) |>
   
-  
   # Flag tier 1
   
   mutate(tier1flag =
            case_when(tier == 1 ~ 1,
                      tier > 1 ~ 0)) |>
   
-  # Stage 3: Determining Adequacy Level (Tier funding) -------------
-
-mutate(tier3finaladequacy = case_when(tier == 3 ~ final_adequacy_target,
+  mutate(tier3finaladequacy = 
+           case_when(tier == 3 ~ as.numeric(final_adequacy_target),
                                       TRUE ~ 0),
-       tier4finaladequacy = case_when(tier == 4 ~ final_adequacy_target,
+         tier4finaladequacy = 
+           case_when(tier == 4 ~ as.numeric(final_adequacy_target),
                                       TRUE ~ 0)) |> 
   
   # Tier 1 funding gap
@@ -143,7 +142,7 @@ mutate(tier3finaladequacy = case_when(tier == 3 ~ final_adequacy_target,
     # Tier 3 funding
     
     mutate(tier3_funding =
-             ifelse(tier == 3, (t3funding/sum(ebfsim$tier3finaladequacy))*final_adequacy_target, # t3funding/sum(ebfsim$tier3finaladequacy) = tier 3 funding allocation ratio
+             ifelse(tier == 3, (t3funding/sum(tier3finaladequacy))*final_adequacy_target, # t3funding/sum(tier3finaladequacy) = tier 3 funding allocation ratio
                     0)) |>
     
     mutate(tier3_perpupil =
@@ -155,7 +154,7 @@ mutate(tier3finaladequacy = case_when(tier == 3 ~ final_adequacy_target,
     
     
     mutate(tier4_funding =
-             ifelse(tier == 4, (t4funding/sum(ebfsim$tier4finaladequacy))*final_adequacy_target, # t4funding/sum(ebfsim$tier4finaladequacy) = tier 4 funding allocation ratio
+             ifelse(tier == 4, (t4funding/sum(tier4finaladequacy))*final_adequacy_target, # t4funding/sum(tier4finaladequacy) = tier 4 funding allocation ratio
                     0)) |>
     mutate(tier4_perpupil =
              ifelse(total_ase>0,
@@ -168,7 +167,7 @@ mutate(tier3finaladequacy = case_when(tier == 3 ~ final_adequacy_target,
     # Step 1
     
     mutate(tier2_funding_step1 =
-             tier2_funding_gap * as.numeric(t2funding/sum(ebfsim$t2fg, na.rm = T))) |> # t2funding/sum(ebfsim$t2fg, na.rm = T = tier 2 funding allocation rate
+             tier2_funding_gap * as.numeric(t2funding/sum(t2fg, na.rm = T))) |> # t2funding/sum(t2fg, na.rm = T = tier 2 funding allocation rate
     
     # Original Tier 2 Per Student
     
@@ -179,8 +178,8 @@ mutate(tier3finaladequacy = case_when(tier == 3 ~ final_adequacy_target,
     # Step 2
     
     mutate(tier2_funding_step2 =
-             ifelse(tier == 2 & tier2_perpupil_orig<as.numeric(max(ebfsim$tier3_perpupil)), # max(ebfsim$tier3_perpupil) Tier 3 Maximum Funding Per Student for Purposes of Caclulating Final Tier 2 Funding
-                    as.numeric(max(ebfsim$tier3_perpupil))*total_ase,
+             ifelse(tier == 2 & tier2_perpupil_orig<as.numeric(max(tier3_perpupil)), # max(tier3_perpupil) Tier 3 Maximum Funding Per Student for Purposes of Caclulating Final Tier 2 Funding
+                    as.numeric(max(tier3_perpupil))*total_ase,
                     tier2_funding_step1)) |>
     
     
@@ -219,3 +218,6 @@ mutate(tier3finaladequacy = case_when(tier == 3 ~ final_adequacy_target,
     mutate(gross_fy_funding =
              new_fy_funding +
              base_funding_minimum)
+
+
+print("dun")
