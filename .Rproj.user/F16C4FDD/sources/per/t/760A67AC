@@ -3,7 +3,7 @@
     "path": "~/GitHub/IL-EBF/scripts/shiny/ebf_sim/ui.R",
     "project_path": "scripts/shiny/ebf_sim/ui.R",
     "type": "r_source",
-    "hash": "2535488170",
+    "hash": "2503069438",
     "contents": "",
     "dirty": false,
     "created": 1667258448482.0,
@@ -12,15 +12,15 @@
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "14,18",
-        "scrollLine": "0"
+        "cursorPosition": "152,40",
+        "scrollLine": "126"
     },
     "folds": "",
-    "lastKnownWriteTime": 1667681187,
+    "lastKnownWriteTime": 1667775875,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1667681187734,
+    "last_content_update": 1667775875348,
     "read_only": false,
     "read_only_alternatives": []
 }

@@ -100,6 +100,31 @@ shinyUI({
                    )
                  ),
                  
+                 br(), 
+                 
+                 fluidRow(
+                   column(12, h4(strong("Select district type for the map"))) # make it clear this is a suggestion/hypothetical - compare against cp.
+                 ),
+                 
+                 fluidRow(
+                   column(12,
+                          radioButtons(inputId = 'dist_type', label = 'Show district type selection',
+                                       choices = c('Show', 'Hide'), inline = TRUE, selected = 'Hide')
+                   )
+                 ),
+                 conditionalPanel(
+                   condition = "input.dist_type == 'Show'", 
+                   fluidRow(
+                     column(8,
+                            radioButtons("district_type", label="Apply a weight for race", choices = c("Unifed district" = "UNIT", # The variable is a stand in for now
+                                                                                                       "Elementary district" = "ELEM",
+                                                                                                       "High school district" = "HS"),
+                                         selected = "UNIT"),
+                     ),
+                     bsTooltip("race_weight", "500 years of white supremacy has set back Black and Brown students relative to their White peers. See what happens if EBF adjusted for this injustice.", placement = "bottom")
+                   )
+                 ),
+                 
                ) # close well panel
         ), # close input column
         
