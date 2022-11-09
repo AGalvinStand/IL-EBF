@@ -21,6 +21,7 @@ options(shiny.trace = TRUE)
 # Create dashboard body
 
 ebf_base_calc_conpov <- read_rds("data/ebf_base_calc_conpov.rds")
+ebf_base_calc <- read_rds("data/ebf_base_calc_conpov.rds")
 
 shinyUI({
   
@@ -36,7 +37,7 @@ shinyUI({
       fluidRow(
         column(2,
                wellPanel(
-                 img(src = "scrooge.gif", height = 200, width = 250, align = "center"),
+                 img(src = "ebfsim_logo2.png", height = 250, width = 200, align = "center"),
                  h3(strong("Adequacy Target and Minimum Funding Level Simulations")),
                  br(),
                  h4(em("Explore the policy choices below to see how they effect the amount of funding required to fully fund Illinois schools and how much yearly funding is necessary to get there!")),
@@ -56,75 +57,31 @@ shinyUI({
                  br(), 
                  
                  fluidRow(
-                   column(12, h4(strong("Concentrated poverty weights")))
+                   column(12, h4(strong("Additional weights")))
                  ),
                  fluidRow(
                    column(12,
-                          radioButtons(inputId = 'cp_wgts', label = 'Show weights',
+                          radioButtons(inputId = 'add_wgts', label = 'Show weights',
                                        choices = c('Show', 'Hide'), inline = TRUE, selected = 'Hide')
                    )
                  ),
                  
                  conditionalPanel(
 
-                   condition = "input.cp_wgts == 'Show'", 
+                   condition = "input.add_wgts == 'Show'", 
                    fluidRow(
                      column(8,
-                            checkboxGroupInput("cp_weights", label="Select from the following:", c("CP weights" = "cp1",
-                                                                                              "CP weights 2" = "cp2"))
+                            checkboxGroupInput("add_weights", 
+                                               label="Select from the following:", 
+                                               choices = c("ebf_base_calc_conpov" = "ebf_base_calc_conpov" = "1"))
+                                                           # ,
+                                                           # "Race weights" = "wgt2"))
                      ),
-                     bsTooltip("cp_weights", "Descirbe the weights here", 
+                     bsTooltip("add_weights", "Descirbe the weights here", 
                                placement = "bottom")
                    )
                  ),
-                 
-                 br(), 
-                 
-                 fluidRow(
-                   column(12, h4(strong("Race weights"))) # make it clear this is a suggestion/hypothetical - compare against cp.
-                 ),
-                 
-                 fluidRow(
-                   column(12,
-                          radioButtons(inputId = 'race_wgt', label = 'Show weight',
-                                       choices = c('Show', 'Hide'), inline = TRUE, selected = 'Hide')
-                   )
-                 ),
-                 conditionalPanel(
-                   condition = "input.race_wgt == 'Show'", 
-                   fluidRow(
-                     column(8,
-                            checkboxInput("race_weight", label="Apply a weight for race", FALSE),
-                     ),
-                     bsTooltip("race_weight", "500 years of white supremacy has set back Black and Brown students relative to their White peers. See what happens if EBF adjusted for this injustice.", placement = "bottom")
-                   )
-                 ),
-                 
-                 br(), 
-                 
-                 fluidRow(
-                   column(12, h4(strong("Select district type for the map"))) # make it clear this is a suggestion/hypothetical - compare against cp.
-                 ),
-                 
-                 fluidRow(
-                   column(12,
-                          radioButtons(inputId = 'dist_type', label = 'Show district type selection',
-                                       choices = c('Show', 'Hide'), inline = TRUE, selected = 'Hide')
-                   )
-                 ),
-                 conditionalPanel(
-                   condition = "input.dist_type == 'Show'", 
-                   fluidRow(
-                     column(8,
-                            radioButtons("district_type", label="Apply a weight for race", choices = c("Unifed district" = "UNIT", # The variable is a stand in for now
-                                                                                                       "Elementary district" = "ELEM",
-                                                                                                       "High school district" = "HS"),
-                                         selected = "UNIT"),
-                     ),
-                     bsTooltip("race_weight", "500 years of white supremacy has set back Black and Brown students relative to their White peers. See what happens if EBF adjusted for this injustice.", placement = "bottom")
-                   )
-                 ),
-                 
+
                ) # close well panel
         ), # close input column
         
@@ -144,8 +101,14 @@ shinyUI({
                wellPanel(
                  h3("Topline Outputs"),
                  h4("To be included:"),
-                 h5("1. Total funding"),
-                 h5("2. Yearly minimum funding requirements"), # add clarification here make it obvious
+                 h5(strong("Minimum yearly funding:")),
+                 br(),
+                 h5(textOutput("myf")),
+                 br(),
+                 h5(strong("Are you on track to fully-fund schools?")), 
+                 br(),
+                 h5(textOutput("goal")), # add clarification here make it obvious
+                 br(),
                  h5("3. Percent of students in underfunded districts"),
                  h5("4. Race gaps"),
                  h5("5. Per pupil funding increases"),

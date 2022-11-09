@@ -264,3 +264,6 @@ rm(cwi,
    tier3_far,
    tier4_far)
 
+ebf_base_calc <- ebf_base_calc[,c(1:21)]
+
+write_rds(ebf_base_calc,"scripts/shiny/ebf_sim/data/ebf_base_calc.rds")

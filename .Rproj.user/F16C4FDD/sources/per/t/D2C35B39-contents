@@ -18,48 +18,22 @@ options(shiny.trace = TRUE)
 
 library(shiny)
 
+ebf_base_calc_conpov <- read_rds("data/ebf_base_calc_conpov.rds")
+ebf_base_calc <- read_rds("data/ebf_base_calc_conpov.rds")
 
 shinyServer(function(input, output) {
 
-   # Read in dataframes ----
-
-       # these 4 inputs will be used to create a reactive dataframe based on the
-       # CP and Race UI inputs.
-
-   # Data frames:
-
-   # 1. CREATE RDS FOR "AS IS" -----
-
-   # Add code (as see under #2) here
-
-   # 2. EBF with concentrated poverty weights
-
-   ebf_base_calc_conpov <- read_rds("data/ebf_base_calc_conpov.rds")
-
-   # 3. CREATE RDS FOR Race weights ----
-
-   # Add code (as see under #2) here
-
-   # 4. CREATE RD FOR Race + Concentrated poverty weights. ----
-
-   # Add code (as see under #2) here
 
    # CODE FOR REACTIVE DATA FRAME: -----
-
-   #############################################################################
-   #############################################################################
-   #
-   #
-   # use "df()" for the reactive dataframe name.
-   #
-   # If concentrated poverty weight is on, then use 2;
-   # else if race weight is on, then use 3;
-   # else if cp and race weight is on, then use 4;
-   # else use 1.
-   #
-   #
-   ##############################################################################
-   ##############################################################################
+  
+  # df() <- reactive({
+  #   if (input$add_weights == "wgt1") {
+  #     ebf_base_calc_conpov <- read_rds("data/ebf_base_calc_conpov.rds")
+  #   } else if (input$add_weights != "wgt2" & input$add_weights != "wgt1") {
+  #     ebf_base_calc <- read_rds("data/ebf_base_calc_conpov.rds")
+  #   } 
+  #   
+  # })
 
    # Create ebfsim variable ----
 
@@ -69,7 +43,7 @@ shinyServer(function(input, output) {
          # This will make it so the following lines of code use the reactive
          # data frame created above.
 
-   ebfsim <- ebf_base_calc_conpov # CONTROL F AND REPLACE "ebf_base_calc_conpov"
+   ebfsim <- ebf_base_calc # CONTROL F AND REPLACE "ebf_base_calc_conpov"
                                    # with "df()"
 
    # create outputs necessary for reactive data based on year ----
@@ -79,6 +53,24 @@ shinyServer(function(input, output) {
    minimum_yearly_funding <- reactive({
      (sum(ebfsim$final_adequacy_target) - sum(ebfsim$final_resources))/(input$years - as.numeric(format(Sys.time(), "%Y")))
    })
+   
+   output$myf <- reactive({
+     dollar(minimum_yearly_funding(), na.rm = TRUE)
+   })
+   
+   
+   output$goal <- reactive({
+     
+     if (input$years == 2027) {
+       return("Yes, you're on target to fully fund schools by 2027!")
+     } else if ((input$years - 2027) == 1) {
+       return(paste("No. You are ",(input$years - 2027)," year away from the original goal...",sep=""))
+     } else if ((input$years - 2027) > 20) {
+       return(paste("Not even close. You are ",(input$years - 2027)," years away from the original goal...You are a wretched human being",sep=""))
+     } else {
+       return(paste("No. You are ",(input$years - 2027)," years away from the original goal...",sep=""))
+     }
+    })
    
    # tier 1 new appropriation allocation (50% of NAA, statutorily set)
    
@@ -300,6 +292,8 @@ shinyServer(function(input, output) {
      
 
    })
+   
+   
 
  # Use reactive dataframes to shape outputs ----
 

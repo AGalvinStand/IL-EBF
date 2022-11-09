@@ -1,0 +1,14 @@
+name: ebf_sim
+title: ebf_sim
+username:
+account: education-report-irrpp
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 7564918
+bundleId: 6490520
+url: https://education-report-irrpp.shinyapps.io/ebf_sim/
+when: 1667937565.97982
+lastSyncTime: 1667937565.97983
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: testing year script.R|www/ebfsim_logo.png|www/scrooge.gif|www/testimage.jpg
