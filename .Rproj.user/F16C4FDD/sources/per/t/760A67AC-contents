@@ -71,11 +71,10 @@ shinyUI({
                    condition = "input.add_wgts == 'Show'", 
                    fluidRow(
                      column(8,
-                            checkboxGroupInput("add_weights", 
+                            checkboxInput("add_weights", 
                                                label="Select from the following:", 
-                                               choices = c("ebf_base_calc_conpov" = "ebf_base_calc_conpov" = "1"))
-                                                           # ,
-                                                           # "Race weights" = "wgt2"))
+                                               value = "ebf_base_calc_conpov")
+
                      ),
                      bsTooltip("add_weights", "Descirbe the weights here", 
                                placement = "bottom")

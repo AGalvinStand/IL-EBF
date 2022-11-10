@@ -13,6 +13,7 @@ library(tidyverse)
 ebf_base_calc_conpov <- read_rds("scripts/shiny/ebf_sim/data/ebf_base_calc_conpov.rds")
 ebf_base_calc <- read_rds("scripts/shiny/ebf_sim/data/ebf_base_calc.rds")
 
+shiny_ebf_bc <- ebf_base_calc[,c(1,2,12:)]
 
 
 ebfsim <- ebf_base_calc_conpov

@@ -21,19 +21,19 @@ library(shiny)
 ebf_base_calc_conpov <- read_rds("data/ebf_base_calc_conpov.rds")
 ebf_base_calc <- read_rds("data/ebf_base_calc_conpov.rds")
 
-shinyServer(function(input, output) {
+shinyServer(function(input, output, session) {
 
 
    # CODE FOR REACTIVE DATA FRAME: -----
   
-  # df() <- reactive({
-  #   if (input$add_weights == "wgt1") {
-  #     ebf_base_calc_conpov <- read_rds("data/ebf_base_calc_conpov.rds")
-  #   } else if (input$add_weights != "wgt2" & input$add_weights != "wgt1") {
-  #     ebf_base_calc <- read_rds("data/ebf_base_calc_conpov.rds")
-  #   } 
-  #   
-  # })
+  df() <- reactive({
+    if (length(input$add_weights == 1)) {
+      read_rds(paste("data/",input$add_weights,".rds",sep=""))
+    } else {
+      ebf_base_calc
+    }
+
+  })
 
    # Create ebfsim variable ----
 
@@ -43,15 +43,15 @@ shinyServer(function(input, output) {
          # This will make it so the following lines of code use the reactive
          # data frame created above.
 
-   ebfsim <- ebf_base_calc # CONTROL F AND REPLACE "ebf_base_calc_conpov"
-                                   # with "df()"
+   # ebfsim <- ebf_base_calc
+     
 
    # create outputs necessary for reactive data based on year ----
    
    # minimum yearly funding = total funding gap minus years to the goal year.
    
    minimum_yearly_funding <- reactive({
-     (sum(ebfsim$final_adequacy_target) - sum(ebfsim$final_resources))/(input$years - as.numeric(format(Sys.time(), "%Y")))
+     (sum(df()$final_adequacy_target) - sum(df()$final_resources))/(input$years - as.numeric(format(Sys.time(), "%Y")))
    })
    
    output$myf <- reactive({
@@ -105,9 +105,9 @@ shinyServer(function(input, output) {
    t1tr <- reactive({
      
      gap <- function(y) {
-       ebfsim$t1cutoff <- case_when(ebfsim$final_percent_adequacy < y ~ ((y*ebfsim$final_adequacy_target)-ebfsim$final_resources),
+       df()$t1cutoff <- case_when(df()$final_percent_adequacy < y ~ ((y*df()$final_adequacy_target)-df()$final_resources),
                                     FALSE ~ 0)
-       return(sum(ebfsim$t1cutoff, na.rm = TRUE))
+       return(sum(df()$t1cutoff, na.rm = TRUE))
      }
      
      # This plugs in percentages from 0 to 1 until it finds the optimal cut off,
@@ -139,7 +139,7 @@ shinyServer(function(input, output) {
    # sum of (tier 1 target ratio * final adequacy level)-final resources for each
    # district below the cut off percent selected.
 
-   ebfsim |>
+   df() |>
      
      # use the target ratio to assign tiers and tier2 funding gap
      
