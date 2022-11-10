@@ -119,24 +119,26 @@ shinyUI({
                  h4("Here are some things to know about your policy choices:"),
                  br(),
                  h5(strong("Minimum yearly funding increases need to reach your goal year")),
-                 br(),
                  h5(textOutput("myf")),
                  conditionalPanel(
                    condition = "input.df_test == 'ebf_base_calc_conpov'",
                    br(),
-                   h5("Compared to EBF as it is, this amounts to an additional"),
+                   em(textOutput("myf_diff")), 
                    br(),
-                   textOutput("myf_diff"), 
-                   br(),
-                   h5("in minimum yearly funding increases.")
                    ),
                  br(),
+                 conditionalPanel(
+                   condition = "input.df_test == 'ebf_base_calc_conpov'",
+                   h5(strong("This amounts to a yearly per pupil funding increase of:")),
+                   textOutput("fat_perpupil"),
+                   br()
+                 ),
                  # Add conditional panels for other weights ----
-                 h5(strong("How far off track are you from our original goal to fully-fund school?")), 
-                 br(),
+                 h5(strong("How far off track are you from our original goal to fully-fund schools?")),
                  h5(textOutput("goal")), # add clarification here make it obvious
                  br(),
                  h5("3. Percent of students in underfunded districts"),
+                 h5(textOutput("poor_students")),
                  h5("4. Race gaps"),
                  h5("5. Per pupil funding increases"),
                  h5("6. Print out PDF for your district"),

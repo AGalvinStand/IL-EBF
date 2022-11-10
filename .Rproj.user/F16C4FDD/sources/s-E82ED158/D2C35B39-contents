@@ -38,22 +38,32 @@ shinyServer(function(input, output, session) {
    
    output$myf_diff <- reactive({
      myfd <- (sum(ebf_base_calc$final_adequacy_target) - sum(ebf_base_calc$final_resources))/(input$years - as.numeric(format(Sys.time(), "%Y")))
-       dollar(minimum_yearly_funding() - myfd, na.rm = TRUE)
+      paste("Compared to EBF as it is, this amounts to an additional ",dollar(minimum_yearly_funding() - myfd, na.rm = TRUE)," in minimum yearly funding increases.",sep="")
      })
    
+   output$fat_perpupil <- reactive({
+     ebfsim <- get(input$df_test)
+     dollar((sum(ebfsim$final_adequacy_target)/sum(ebfsim$total_ase))-(sum(ebf_base_calc$final_adequacy_target)/sum(ebf_base_calc$total_ase)))
+   })
+   
+   # output$myf_diff_text <- reactive({
+   #   return(paste(input$myf_))
+   # })
    
    output$goal <- reactive({
      
      if (input$years == 2027) {
-       return("Yes, you're on target to fully fund schools by 2027!")
+       return("You're on target to fully fund schools by 2027!")
      } else if ((input$years - 2027) == 1) {
-       return(paste("No. You are ",(input$years - 2027)," year away from the original goal...",sep=""))
-     } else if ((input$years - 2027) > 10) {
-       return(paste("You are getting pretty far off the mark. You are ",(input$years - 2027)," years away from the original goal...You are a wretched human being",sep=""))
-     } else if ((input$years - 2027) > 20) {
-       return(paste("ok, you are very far off. You are ",
+       return(paste("You are ",(input$years - 2027)," year away from the original goal...",sep=""))
+     } else if ((input$years - 2027) >= 10 & (input$years - 2027) < 20) {
+       return(paste("You are getting pretty far off the mark, buddy. You are ",(input$years - 2027)," years away from the original goal.",sep=""))
+     } else if ((input$years - 2027) >= 20 & (input$years - 2027) < 40) {
+       return(paste("Ok, you are very, very far off the mark now. You are ",
                     (input$years - 2027),
                     " years away from the original goal. Sorry, maybe this wasn't clear. The goal was to fully-fund education for students today, not for your great great grandchildren.",sep=""))
+     } else if ((input$years - 2027) >= 40) {
+       return(paste("You are ",(input$years - 2027)," years away from the original goal. Congratulations, your clear disdain for public education will probably drive us all into a Mad Max-style post-apolocalyptic existence. Public education won't even exist anymore, so you'll like that. The main thing on people's minds will be mining scarce resources from Bullet Farm without dying or appeasing Immortan Joe for a chance to live out their brutal existence in the Citadel.",sep=""))
        
      } else {
        return(paste("No. You are ",(input$years - 2027)," years away from the original goal...",sep=""))
@@ -286,6 +296,13 @@ shinyServer(function(input, output, session) {
    
 
  # Use reactive dataframes to shape outputs ----
+   
+   output$poor_students <- reactive({
+     ebfsim2() |>
+       filter(tier == 1) |>
+       return(sum(total_ase))
+     
+   })
 
    # We will beable to use the ebfsim() as the reactive data frame for the
    # plot, map, table, and summary statistics
