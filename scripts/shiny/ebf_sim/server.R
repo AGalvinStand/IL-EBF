@@ -46,9 +46,13 @@ shinyServer(function(input, output, session) {
      dollar((sum(ebfsim$final_adequacy_target)/sum(ebfsim$total_ase))-(sum(ebf_base_calc$final_adequacy_target)/sum(ebf_base_calc$total_ase)))
    })
    
-   # output$myf_diff_text <- reactive({
-   #   return(paste(input$myf_))
-   # })
+   output$poor_students <- reactive({
+     total_students <- sum(ebfsim2()$total_ase)
+     df <- ebfsim2() |>
+       filter(tier == 1)
+     percent(sum(df$total_ase,na.rm = T)/total_students, accuracy = 3)
+     
+   })
    
    output$goal <- reactive({
      
@@ -296,14 +300,16 @@ shinyServer(function(input, output, session) {
    
 
  # Use reactive dataframes to shape outputs ----
-   
-   output$poor_students <- reactive({
-     ebfsim2() |>
-       filter(tier == 1) |>
-       return(sum(total_ase))
-     
-   })
 
+# barchart <- reactive({
+#   ebfsim2()|>
+#     group_by(tier_text) |>
+#     summarise(tier = mean(tier),
+#               new_fy_funding = sum(new_fy_funding),
+#               total_ase = sum(total_ase)) |>
+#     mutate(new_funding_perpupil = new_fy_funding/total_ase)
+# })
+#    
    # We will beable to use the ebfsim() as the reactive data frame for the
    # plot, map, table, and summary statistics
 
@@ -312,11 +318,12 @@ shinyServer(function(input, output, session) {
      output$plot1 <- renderPlotly({
        ggplotly(
          ggplot(ebfsim2(),
-                aes(x=tier, y=new_fy_funding_perpupil)) +
+                aes(x=tier, y=final_adequacy_target_per_pupil)) +
            geom_col() +
-           scale_y_continuous(labels = dollar_format(), limits = c(0,650000000)) +
+           scale_y_continuous(labels = dollar_format(), limits = c(0,25000)) +
            theme_bw()
        )
+       
 
 
      }) # close out plot -----

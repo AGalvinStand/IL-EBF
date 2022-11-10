@@ -137,10 +137,9 @@ shinyUI({
                  h5(strong("How far off track are you from our original goal to fully-fund schools?")),
                  h5(textOutput("goal")), # add clarification here make it obvious
                  br(),
-                 h5("3. Percent of students in underfunded districts"),
+                 h5(strong("Percent of Illinois students in underfunded districts who will benefit from this choice")),
                  h5(textOutput("poor_students")),
                  h5("4. Race gaps"),
-                 h5("5. Per pupil funding increases"),
                  h5("6. Print out PDF for your district"),
                  tableOutput("toplines")
                ) # close well panel

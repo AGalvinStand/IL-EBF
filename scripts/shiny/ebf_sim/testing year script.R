@@ -13,8 +13,6 @@ library(tidyverse)
 ebf_base_calc_conpov <- read_rds("scripts/shiny/ebf_sim/data/ebf_base_calc_conpov.rds")
 ebf_base_calc <- read_rds("scripts/shiny/ebf_sim/data/ebf_base_calc.rds")
 
-shiny_ebf_bc <- ebf_base_calc[,c(1,2,12:)]
-
 
 ebfsim <- ebf_base_calc_conpov
 
@@ -229,3 +227,17 @@ df <- ebfsim |>
 
 
 print("dun")
+
+df2 <- df|>
+  group_by(tier_text) |>
+  summarise(tier = mean(tier),
+            new_fy_funding = sum(new_fy_funding),
+            total_ase = sum(total_ase)) |>
+  mutate(new_funding_perpupil = new_fy_funding/total_ase)
+
+ggplotly(
+  ggplot(df2,
+         aes(x=tier,y=new_funding_perpupil)) +
+    geom_col() +
+    scale_y_continuous(labels = dollar_format(), limits = c(0,200000)) +
+    theme_bw())
