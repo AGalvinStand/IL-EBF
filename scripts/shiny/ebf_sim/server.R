@@ -8,55 +8,38 @@ library(shinythemes)
 # library(shinydashboard)
 # library(shinyBS)
 # library(htmltools)
-# library(DT)
+library(DT)
 # library(leaflet)
 require(scales)
 library(plotly)
 library(tidyverse)
+library(base)
 
 options(shiny.trace = TRUE)
 
 library(shiny)
 
 ebf_base_calc_conpov <- read_rds("data/ebf_base_calc_conpov.rds")
-ebf_base_calc <- read_rds("data/ebf_base_calc_conpov.rds")
+ebf_base_calc <- read_rds("data/ebf_base_calc.rds")
 
 shinyServer(function(input, output, session) {
 
-
-   # CODE FOR REACTIVE DATA FRAME: -----
-  
-  df() <- reactive({
-    if (length(input$add_weights == 1)) {
-      read_rds(paste("data/",input$add_weights,".rds",sep=""))
-    } else {
-      ebf_base_calc
-    }
-
-  })
-
-   # Create ebfsim variable ----
-
-     # In the following line of code, replace "ebf_base_calc_conpov" with
-     # "df()"
-
-         # This will make it so the following lines of code use the reactive
-         # data frame created above.
-
-   # ebfsim <- ebf_base_calc
-     
-
-   # create outputs necessary for reactive data based on year ----
-   
-   # minimum yearly funding = total funding gap minus years to the goal year.
    
    minimum_yearly_funding <- reactive({
-     (sum(df()$final_adequacy_target) - sum(df()$final_resources))/(input$years - as.numeric(format(Sys.time(), "%Y")))
+     
+     ebfsim <- get(input$df_test)
+     
+     (sum(ebfsim$final_adequacy_target) - sum(ebfsim$final_resources))/(input$years - as.numeric(format(Sys.time(), "%Y")))
    })
    
    output$myf <- reactive({
      dollar(minimum_yearly_funding(), na.rm = TRUE)
    })
+   
+   output$myf_diff <- reactive({
+     myfd <- (sum(ebf_base_calc$final_adequacy_target) - sum(ebf_base_calc$final_resources))/(input$years - as.numeric(format(Sys.time(), "%Y")))
+       dollar(minimum_yearly_funding() - myfd, na.rm = TRUE)
+     })
    
    
    output$goal <- reactive({
@@ -65,8 +48,13 @@ shinyServer(function(input, output, session) {
        return("Yes, you're on target to fully fund schools by 2027!")
      } else if ((input$years - 2027) == 1) {
        return(paste("No. You are ",(input$years - 2027)," year away from the original goal...",sep=""))
+     } else if ((input$years - 2027) > 10) {
+       return(paste("You are getting pretty far off the mark. You are ",(input$years - 2027)," years away from the original goal...You are a wretched human being",sep=""))
      } else if ((input$years - 2027) > 20) {
-       return(paste("Not even close. You are ",(input$years - 2027)," years away from the original goal...You are a wretched human being",sep=""))
+       return(paste("ok, you are very far off. You are ",
+                    (input$years - 2027),
+                    " years away from the original goal. Sorry, maybe this wasn't clear. The goal was to fully-fund education for students today, not for your great great grandchildren.",sep=""))
+       
      } else {
        return(paste("No. You are ",(input$years - 2027)," years away from the original goal...",sep=""))
      }
@@ -105,9 +93,10 @@ shinyServer(function(input, output, session) {
    t1tr <- reactive({
      
      gap <- function(y) {
-       df()$t1cutoff <- case_when(df()$final_percent_adequacy < y ~ ((y*df()$final_adequacy_target)-df()$final_resources),
+       ebfsim <- get(input$df_test)
+       ebfsim$t1cutoff <- case_when(ebfsim$final_percent_adequacy < y ~ ((y*ebfsim$final_adequacy_target)-ebfsim$final_resources),
                                     FALSE ~ 0)
-       return(sum(df()$t1cutoff, na.rm = TRUE))
+       return(sum(ebfsim$t1cutoff, na.rm = TRUE))
      }
      
      # This plugs in percentages from 0 to 1 until it finds the optimal cut off,
@@ -138,8 +127,9 @@ shinyServer(function(input, output, session) {
    # It does so by summing the funding gap model -
    # sum of (tier 1 target ratio * final adequacy level)-final resources for each
    # district below the cut off percent selected.
+     ebfsim <- get(input$df_test)
 
-   df() |>
+   ebfsim |>
      
      # use the target ratio to assign tiers and tier2 funding gap
      
