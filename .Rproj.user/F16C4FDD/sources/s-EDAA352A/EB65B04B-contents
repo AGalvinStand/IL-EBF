@@ -211,12 +211,32 @@ shinyServer(function(input, output, session) {
      
      mutate(tier2_funding_gap =
               case_when(tier == 1 | tier ==2 ~ ((.9*final_adequacy_target)-final_resources-tier1_funding_gap)*(1-local_cap_ratio_capped90),
-                        TRUE ~ 0)) |>
+                        TRUE ~ 0))
+   })
+   
+   # creating allocation rates for tier 2, 3, and 4 for next set of calculations
+   
+   t4ar <- reactive({
+     as.numeric(t4funding())/sum(ebfsim2()$tier4finaladequacy)
+   })
+   t3ar <- reactive ({
+     as.numeric(t3funding())/sum(ebfsim2()$tier3finaladequacy)
+   })
+   
+   t2fg <- reactive({
+     sum(ebfsim2()$tier2_funding_gap)
+   })
+   
+   t2ar <- reactive({t2funding()/t2fg()})
+   
+   ebfsim3 <- reactive({
+     
+     ebfsim2() |>
      
      # Tier 3 funding
      
      mutate(tier3_funding =
-              case_when(tier == 3 ~ (t3funding()/sum(tier3finaladequacy))*final_adequacy_target, # t3funding()/sum(tier3finaladequacy) = tier 3 funding allocation ratio
+              case_when(tier == 3 ~ final_adequacy_target*(t3ar()), # t3funding()/sum(tier3finaladequacy) = tier 3 funding allocation ratio
                         TRUE ~ 0)) |>
 
      mutate(tier3_perpupil =
@@ -227,7 +247,7 @@ shinyServer(function(input, output, session) {
      
      
      mutate(tier4_funding =
-              case_when(tier == 4 ~ (t4funding()/sum(tier4finaladequacy))*final_adequacy_target, # t4funding()/sum(tier4finaladequacy) = tier 4 funding allocation ratio
+              case_when(tier == 4 ~ final_adequacy_target*t4ar(), # t4funding()/sum(tier4finaladequacy) = tier 4 funding allocation ratio
                         TRUE ~ 0)) |>
 
      mutate(tier4_perpupil =
@@ -240,7 +260,7 @@ shinyServer(function(input, output, session) {
      # Step 1
      
      mutate(tier2_funding_step1 =
-              case_when(tier == 1 | tier == 2 ~ tier2_funding_gap * as.numeric(t2funding()/sum(t2fg, na.rm = T)),
+              case_when(tier == 1 | tier == 2 ~ tier2_funding_gap * t2ar(),
                         TRUE ~ 0)) |> # t2funding()/sum(t2fg, na.rm = T = tier 2 funding allocation rate
      
      # Original Tier 2 Per Student
@@ -252,12 +272,24 @@ shinyServer(function(input, output, session) {
      
      mutate(tier2_funding_step2 =
               case_when(tier == 2 & tier2_perpupil_orig<as.numeric(max(tier3_perpupil)) ~ as.numeric(max(tier3_perpupil))*total_ase, # max(tier3_perpupil) Tier 3 Maximum Funding Per Student for Purposes of Caclulating Final Tier 2 Funding
-                        TRUE ~ tier2_funding_step1)) |>
+                        TRUE ~ tier2_funding_step1))
+     
+   })
+     
+     # creating a reactive frame for the tier 2 revision (sum of tier 2 funding step 1 divided by step 2)
+     
+     step2revised <- reactive({
+       sum(ebfsim3()$tier2_funding_step1)/sum(ebfsim3()$tier2_funding_step2)
+     })
+     
+     ebfsimfinal <- reactive({
+       
+       ebfsim3() |>
                                                                   
      # Step 3
      
      mutate(tier2_funding_step3 =
-              tier2_funding_step2 * 0.981) |> # FLAGGING THIS - This is a revision in the EBF calculation, unsure what it is
+              tier2_funding_step2 * step2revised()) |> # FLAGGING THIS - This is a revision in the EBF calculation, unsure what it is
    
    # Final Tier 2 Per Student
    
@@ -296,36 +328,29 @@ shinyServer(function(input, output, session) {
      
 
    })
+     
+     
+     barchart <- reactive({
+       ebfsimfinal() |>
+       group_by(tier_text) |>
+       summarise(tier = mean(tier),
+                 new_fy_funding = sum(new_fy_funding),
+                 total_ase = sum(total_ase)) |>
+       mutate(new_funding_perpupil = new_fy_funding/total_ase)
+     })
    
-   
-
- # Use reactive dataframes to shape outputs ----
-
-# barchart <- reactive({
-#   ebfsim2()|>
-#     group_by(tier_text) |>
-#     summarise(tier = mean(tier),
-#               new_fy_funding = sum(new_fy_funding),
-#               total_ase = sum(total_ase)) |>
-#     mutate(new_funding_perpupil = new_fy_funding/total_ase)
-# })
-#    
-   # We will beable to use the ebfsim() as the reactive data frame for the
-   # plot, map, table, and summary statistics
 
  # Plot ----
 
      output$plot1 <- renderPlotly({
        ggplotly(
-         ggplot(ebfsim2(),
-                aes(x=tier, y=final_adequacy_target_per_pupil)) +
-           geom_col() +
-           scale_y_continuous(labels = dollar_format(), limits = c(0,25000)) +
+         ggplot(ebfsimfinal(),
+                aes(y=tier2)) +
+           geom_bar() +
+           scale_y_continuous(labels = dollar_format(), limits = c(0,500)) +
            theme_bw()
        )
        
-
-
      }) # close out plot -----
 
  # Map ----

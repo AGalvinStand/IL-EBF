@@ -200,12 +200,16 @@ df <- ebfsim |>
   
   mutate(tier2_funding_step2 =
            case_when(tier == 2 & tier2_perpupil_orig<as.numeric(max(tier3_perpupil)) ~ as.numeric(max(tier3_perpupil))*total_ase, # max(tier3_perpupil) Tier 3 Maximum Funding Per Student for Purposes of Caclulating Final Tier 2 Funding
-                     TRUE ~ tier2_funding_step1)) |>
+                     TRUE ~ tier2_funding_step1))
+  
+  revisedstep2 <- sum(dfw$tier2_funding_step1)/sum(dfw$tier2_funding_step2)
+  
+  dfw1 <- dfw |>
   
   # Step 3
   
   mutate(tier2_funding_step3 =
-           tier2_funding_step2 * 0.981) |> # FLAGGING THIS - This is a revision in the EBF calculation, unsure what it is
+           tier2_funding_step2 * revisedstep2) |> # FLAGGING THIS - This is a revision in the EBF calculation, unsure what it is
   
   # Final Tier 2 Per Student
   
@@ -245,7 +249,7 @@ df <- ebfsim |>
 
 print("dun")
 
-df2 <- dfw|>
+df2 <- dfw1|>
   group_by(tier_text) |>
   summarise(tier = mean(tier),
             new_fy_funding = sum(new_fy_funding),
