@@ -8,49 +8,27 @@ library(shinythemes)
 # library(shinydashboard)
 # library(shinyBS)
 # library(htmltools)
-# library(DT)
+library(DT)
 # library(leaflet)
 require(scales)
 library(plotly)
 library(tidyverse)
+library(base)
 
 options(shiny.trace = TRUE)
 
 library(shiny)
 
 ebf_base_calc_conpov <- read_rds("data/ebf_base_calc_conpov.rds")
-ebf_base_calc <- read_rds("data/ebf_base_calc_conpov.rds")
+ebf_base_calc <- read_rds("data/ebf_base_calc.rds")
 
-shinyServer(function(input, output) {
+shinyServer(function(input, output, session) {
 
-
-   # CODE FOR REACTIVE DATA FRAME: -----
-  
-  # df() <- reactive({
-  #   if (input$add_weights == "wgt1") {
-  #     ebf_base_calc_conpov <- read_rds("data/ebf_base_calc_conpov.rds")
-  #   } else if (input$add_weights != "wgt2" & input$add_weights != "wgt1") {
-  #     ebf_base_calc <- read_rds("data/ebf_base_calc_conpov.rds")
-  #   } 
-  #   
-  # })
-
-   # Create ebfsim variable ----
-
-     # In the following line of code, replace "ebf_base_calc_conpov" with
-     # "df()"
-
-         # This will make it so the following lines of code use the reactive
-         # data frame created above.
-
-   ebfsim <- ebf_base_calc # CONTROL F AND REPLACE "ebf_base_calc_conpov"
-                                   # with "df()"
-
-   # create outputs necessary for reactive data based on year ----
-   
-   # minimum yearly funding = total funding gap minus years to the goal year.
    
    minimum_yearly_funding <- reactive({
+     
+     ebfsim <- get(input$df_test)
+     
      (sum(ebfsim$final_adequacy_target) - sum(ebfsim$final_resources))/(input$years - as.numeric(format(Sys.time(), "%Y")))
    })
    
@@ -58,15 +36,39 @@ shinyServer(function(input, output) {
      dollar(minimum_yearly_funding(), na.rm = TRUE)
    })
    
+   output$myf_diff <- reactive({
+     myfd <- (sum(ebf_base_calc$final_adequacy_target) - sum(ebf_base_calc$final_resources))/(input$years - as.numeric(format(Sys.time(), "%Y")))
+      paste("Compared to EBF as it is, this amounts to an additional ",dollar(minimum_yearly_funding() - myfd, na.rm = TRUE)," in minimum yearly funding increases.",sep="")
+     })
+   
+   output$fat_perpupil <- reactive({
+     ebfsim <- get(input$df_test)
+     dollar((sum(ebfsim$final_adequacy_target)/sum(ebfsim$total_ase))-(sum(ebf_base_calc$final_adequacy_target)/sum(ebf_base_calc$total_ase)))
+   })
+   
+   output$poor_students <- reactive({
+     total_students <- sum(ebfsim2()$total_ase)
+     df <- ebfsim2() |>
+       filter(tier == 1)
+     percent(sum(df$total_ase,na.rm = T)/total_students, accuracy = 3)
+     
+   })
    
    output$goal <- reactive({
      
      if (input$years == 2027) {
-       return("Yes, you're on target to fully fund schools by 2027!")
+       return("You're on target to fully fund schools by 2027!")
      } else if ((input$years - 2027) == 1) {
-       return(paste("No. You are ",(input$years - 2027)," year away from the original goal...",sep=""))
-     } else if ((input$years - 2027) > 20) {
-       return(paste("Not even close. You are ",(input$years - 2027)," years away from the original goal...You are a wretched human being",sep=""))
+       return(paste("You are ",(input$years - 2027)," year away from the original goal...",sep=""))
+     } else if ((input$years - 2027) >= 10 & (input$years - 2027) < 20) {
+       return(paste("You are getting pretty far off the mark, buddy. You are ",(input$years - 2027)," years away from the original goal.",sep=""))
+     } else if ((input$years - 2027) >= 20 & (input$years - 2027) < 40) {
+       return(paste("Ok, you are very, very far off the mark now. You are ",
+                    (input$years - 2027),
+                    " years away from the original goal. Sorry, maybe this wasn't clear. The goal was to fully-fund education for students today, not for your great great grandchildren.",sep=""))
+     } else if ((input$years - 2027) >= 40) {
+       return(paste("You are ",(input$years - 2027)," years away from the original goal. Congratulations, your clear disdain for public education will probably drive us all into a Mad Max-style post-apolocalyptic existence. Public education won't even exist anymore, so you'll like that. The main thing on people's minds will be mining scarce resources from Bullet Farm without dying or appeasing Immortan Joe for a chance to live out their brutal existence in the Citadel.",sep=""))
+       
      } else {
        return(paste("No. You are ",(input$years - 2027)," years away from the original goal...",sep=""))
      }
@@ -105,6 +107,7 @@ shinyServer(function(input, output) {
    t1tr <- reactive({
      
      gap <- function(y) {
+       ebfsim <- get(input$df_test)
        ebfsim$t1cutoff <- case_when(ebfsim$final_percent_adequacy < y ~ ((y*ebfsim$final_adequacy_target)-ebfsim$final_resources),
                                     FALSE ~ 0)
        return(sum(ebfsim$t1cutoff, na.rm = TRUE))
@@ -138,6 +141,7 @@ shinyServer(function(input, output) {
    # It does so by summing the funding gap model -
    # sum of (tier 1 target ratio * final adequacy level)-final resources for each
    # district below the cut off percent selected.
+     ebfsim <- get(input$df_test)
 
    ebfsim |>
      
@@ -297,6 +301,15 @@ shinyServer(function(input, output) {
 
  # Use reactive dataframes to shape outputs ----
 
+# barchart <- reactive({
+#   ebfsim2()|>
+#     group_by(tier_text) |>
+#     summarise(tier = mean(tier),
+#               new_fy_funding = sum(new_fy_funding),
+#               total_ase = sum(total_ase)) |>
+#     mutate(new_funding_perpupil = new_fy_funding/total_ase)
+# })
+#    
    # We will beable to use the ebfsim() as the reactive data frame for the
    # plot, map, table, and summary statistics
 
@@ -305,11 +318,12 @@ shinyServer(function(input, output) {
      output$plot1 <- renderPlotly({
        ggplotly(
          ggplot(ebfsim2(),
-                aes(x=tier, y=new_fy_funding_perpupil)) +
+                aes(x=tier, y=final_adequacy_target_per_pupil)) +
            geom_col() +
-           scale_y_continuous(labels = dollar_format(), limits = c(0,650000000)) +
+           scale_y_continuous(labels = dollar_format(), limits = c(0,25000)) +
            theme_bw()
        )
+       
 
 
      }) # close out plot -----

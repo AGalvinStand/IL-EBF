@@ -21,7 +21,7 @@ options(shiny.trace = TRUE)
 # Create dashboard body
 
 ebf_base_calc_conpov <- read_rds("data/ebf_base_calc_conpov.rds")
-ebf_base_calc <- read_rds("data/ebf_base_calc_conpov.rds")
+ebf_base_calc <- read_rds("data/ebf_base_calc.rds")
 
 shinyUI({
   
@@ -57,7 +57,7 @@ shinyUI({
                  br(), 
                  
                  fluidRow(
-                   column(12, h4(strong("Additional weights")))
+                   column(12, h4(strong("See what happens to EBF funding when you add additional weights")))
                  ),
                  fluidRow(
                    column(12,
@@ -65,19 +65,27 @@ shinyUI({
                                        choices = c('Show', 'Hide'), inline = TRUE, selected = 'Hide')
                    )
                  ),
-                 
+
                  conditionalPanel(
 
                    condition = "input.add_wgts == 'Show'", 
                    fluidRow(
-                     column(8,
-                            checkboxGroupInput("add_weights", 
-                                               label="Select from the following:", 
-                                               choices = c("ebf_base_calc_conpov" = "ebf_base_calc_conpov" = "1"))
-                                                           # ,
-                                                           # "Race weights" = "wgt2"))
+                     column(12,
+                            selectInput(
+                              inputId = "df_test",
+                              label = "Select weights",
+                              choices = c(
+                                "EBF (as is)" = "ebf_base_calc",
+                                "EBF (concentrated poverty weights)" = "ebf_base_calc_conpov"
+                                # ADD "EBF (race weights)" = "ebf_base_calc_race"
+                                # ADD "EBF (concentrated poverty+race weights)" = "ebf_base_calc_cp_race"
+                                ),
+                              selected = "EBF (as is)",
+                              width = "50%")
+
                      ),
-                     bsTooltip("add_weights", "Descirbe the weights here", 
+                     DT::dataTableOutput("test_table"),
+                     bsTooltip("add_weights", "Add weights to adjust for concentrated poverty, race, or both to compare to EBF as it currently is.", 
                                placement = "bottom")
                    )
                  ),
@@ -99,19 +107,39 @@ shinyUI({
         
         column(2,
                wellPanel(
-                 h3("Topline Outputs"),
-                 h4("To be included:"),
-                 h5(strong("Minimum yearly funding:")),
+                 conditionalPanel(
+                   condition = "input.df_test == 'ebf_base_calc'",
+                   h3(strong("EBF as it is"))
+                 ),
+                 conditionalPanel(
+                   condition = "input.df_test == 'ebf_base_calc_conpov'",
+                   h3(strong("EBF with concentrated poverty weights")),
+                   br()
+                 ),
+                 h4("Here are some things to know about your policy choices:"),
                  br(),
+                 h5(strong("Minimum yearly funding increases need to reach your goal year")),
                  h5(textOutput("myf")),
+                 conditionalPanel(
+                   condition = "input.df_test == 'ebf_base_calc_conpov'",
+                   br(),
+                   em(textOutput("myf_diff")), 
+                   br(),
+                   ),
                  br(),
-                 h5(strong("Are you on track to fully-fund schools?")), 
-                 br(),
+                 conditionalPanel(
+                   condition = "input.df_test == 'ebf_base_calc_conpov'",
+                   h5(strong("This amounts to a yearly per pupil funding increase of:")),
+                   textOutput("fat_perpupil"),
+                   br()
+                 ),
+                 # Add conditional panels for other weights ----
+                 h5(strong("How far off track are you from our original goal to fully-fund schools?")),
                  h5(textOutput("goal")), # add clarification here make it obvious
                  br(),
-                 h5("3. Percent of students in underfunded districts"),
+                 h5(strong("Percent of Illinois students in underfunded districts who will benefit from this choice")),
+                 h5(textOutput("poor_students")),
                  h5("4. Race gaps"),
-                 h5("5. Per pupil funding increases"),
                  h5("6. Print out PDF for your district"),
                  tableOutput("toplines")
                ) # close well panel

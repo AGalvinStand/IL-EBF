@@ -1,3 +1,5 @@
+options(scipen = 999)
+
 # load -------
 library(shiny)
 library(shinythemes)
@@ -12,7 +14,6 @@ library(tidyverse)
 
 ebf_base_calc_conpov <- read_rds("scripts/shiny/ebf_sim/data/ebf_base_calc_conpov.rds")
 ebf_base_calc <- read_rds("scripts/shiny/ebf_sim/data/ebf_base_calc.rds")
-
 
 
 ebfsim <- ebf_base_calc_conpov
@@ -31,7 +32,7 @@ gap <- function(y) {
 
 total_adequacy_gap <- sum(ebfsim$final_adequacy_target) - sum(ebfsim$final_resources)
 
-goal_year <-2052
+goal_year <-2027
 
 # #TEST
 #
@@ -43,7 +44,9 @@ current_year <- as.numeric(format(Sys.time(), "%Y"))
 
 years_to_goal <- goal_year - current_year
 
-minimum_yearly_funding <- total_adequacy_gap/years_to_goal
+# minimum_yearly_funding <- total_adequacy_gap/years_to_goal
+
+minimum_yearly_funding <- 300000000
 
 naa <- minimum_yearly_funding # new appropriation allocation (if we want full funding by specified date)
 t1funding <- naa*.5 # tier 1 new appropriation allocation (50% of NAA, statutorily set)
@@ -143,12 +146,17 @@ df <- ebfsim |>
   
   mutate(tier2_funding_gap =
            case_when(tier == 1 | tier ==2 ~ ((.9*final_adequacy_target)-final_resources-tier1_funding_gap)*(1-local_cap_ratio_capped90),
-                     TRUE ~ 0)) |>
+                     TRUE ~ 0))
+
+  t4ar <- as.numeric(t4funding)/sum(df$tier4finaladequacy)
+  t3ar <- as.numeric(t3funding)/sum(df$tier3finaladequacy)
+
+  dfw <- df |>
   
   # Tier 3 funding
   
   mutate(tier3_funding =
-           case_when(tier == 3 ~ (t3funding/sum(tier3finaladequacy))*final_adequacy_target, # t3funding/sum(tier3finaladequacy) = tier 3 funding allocation ratio
+           case_when(tier == 3 ~ final_adequacy_target*(t3ar), # t3funding/sum(tier3finaladequacy) = tier 3 funding allocation ratio
                      TRUE ~ 0)) |>
   
   mutate(tier3_perpupil =
@@ -157,9 +165,10 @@ df <- ebfsim |>
   
   # Tier 4 funding
   
+  # tier4allocationrate <- t4funding/sum(df$tier4finaladequacy)
   
   mutate(tier4_funding =
-           case_when(tier == 4 ~ (t4funding/sum(tier4finaladequacy))*final_adequacy_target, # t4funding/sum(tier4finaladequacy) = tier 4 funding allocation ratio
+           case_when(tier == 4 ~ final_adequacy_target*t4ar, # t4funding/sum(tier4finaladequacy) = tier 4 funding allocation ratio
                      TRUE ~ 0)) |>
   
   mutate(tier4_perpupil =
@@ -228,3 +237,17 @@ df <- ebfsim |>
 
 
 print("dun")
+
+df2 <- df|>
+  group_by(tier_text) |>
+  summarise(tier = mean(tier),
+            new_fy_funding = sum(new_fy_funding),
+            total_ase = sum(total_ase)) |>
+  mutate(new_funding_perpupil = new_fy_funding/total_ase)
+
+ggplotly(
+  ggplot(df2,
+         aes(x=tier,y=new_funding_perpupil)) +
+    geom_col() +
+    scale_y_continuous(labels = dollar_format(), limits = c(0,200000)) +
+    theme_bw())
