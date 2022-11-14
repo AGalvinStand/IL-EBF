@@ -30,7 +30,6 @@ rm(ebf_additional_investments,
    ebf_local_capacity_target,
    ebf_per_student_investments)
 
-
 # Stage 1: Determining Adequacy Level -------------
 
   # Adequacy target
@@ -38,7 +37,6 @@ rm(ebf_additional_investments,
 ebf_base_calc <- ebf_base_calc |>
   mutate(adequacy_target =
            ci_totalcost + total_psi_cwi + ai_total_cost + total_psi_nocwi)
-
 
 # Final adequacy target
 
@@ -50,7 +48,6 @@ cwi <- il_fy22_region_factor_clean [,-c(2:15)]
 
 ebf_base_calc <- ebf_base_calc |>
   left_join(cwi, by = c("distid" = "distid"))
-
 
 ebf_base_calc <- ebf_base_calc |>
   mutate(final_adequacy_target =
