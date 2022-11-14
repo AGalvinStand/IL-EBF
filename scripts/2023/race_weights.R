@@ -44,6 +44,29 @@ ebf_base_calc_race <- left_join(df1, report_card_clean,
 
 write_rds(ebf_base_calc_race,"C:/Users/jpacas/Documents/GitHub/IL-EBF/scripts/shiny/ebf_sim/data/ebf_base_calc_race.rds")
 
+conpov <- readRDS("C:/Users/jpacas/Documents/GitHub/IL-EBF/scripts/shiny/ebf_sim/data/ebf_base_calc_conpov.rds")
+conpov$distid <- as.numeric(conpov$distid)
+
+ebf_base_calc_conpov_race <- left_join(conpov, report_card_clean,  
+                                by = c("distid" = "RCDTS"), na_matches = "never")
+
+
+write_rds(ebf_base_calc_conpov_race,"C:/Users/jpacas/Documents/GitHub/IL-EBF/scripts/shiny/ebf_sim/data/ebf_base_calc_conpov_race.rds")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 missing_data <- subset(ebf_base_calc_race, is.na(ebf_base_calc_race$total_student_enroll))
