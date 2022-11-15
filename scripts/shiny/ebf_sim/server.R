@@ -21,8 +21,14 @@ library(shiny)
 
 ebf_base_calc_conpov <- read_rds("data/ebf_base_calc_conpov.rds")
 ebf_base_calc <- read_rds("data/ebf_base_calc.rds")
+ebf_base_calc_race <- read_rds("data/ebf_base_calc_race.rds")
+ebf_base_calc_conpov_race <- read_rds("data/ebf_base_calc_conpov_race.rds")
 
 shinyServer(function(input, output, session) {
+  
+  goalyear1 <- reactive({
+    paste("EBF as it is by the year ",input$years,sep="")
+  })
 
    
    minimum_yearly_funding <- reactive({
@@ -349,7 +355,7 @@ shinyServer(function(input, output, session) {
    
      
      output$fat_perpupil <- reactive({
-       dollar(minimum_yearly_funding()/sum(ebfsimfinal()$total_ase)-(300000000/sum(ebf_base_calc$total_ase)))
+       paste("Or an additional ",dollar(minimum_yearly_funding()/sum(ebfsimfinal()$total_ase)-(300000000/sum(ebf_base_calc$total_ase)))," per pupil.",sep="")
      })
      
 
@@ -371,32 +377,41 @@ shinyServer(function(input, output, session) {
      
  # Table ----
      
-  cleantable <- reactive({
-    
-      # colnames(ebfsimfinal()[,c(1,2,14:17,22:24,45:47)]) <- c("District ID",
-      #                                                          "District name",
-      #                                                          "Final resources",
-      #                                                          "Final % to adqueacy",
-      #                                                          "District type",
-      #                                                          "Total ASE",
-      #                                                          "Final adequacy target",
-      #                                                          "Final adequacy target (per pupil)",
-      #                                                          "Tier",
-      #                                                          "New funding",
-      #                                                          "New funding (per pupil)",
-      #                                                          "Gross funding")
-    ebfsimfinal()[,c(1,2)]
-     
-             
-  })
+  # cleantable <- reactive({
+  # 
+  #   ebfsimfinal()[,c(1,2,14:17,22:24,45:47)]
+  #     
+  #    
+  #            
+  # })
      
      output$tbl <- renderDataTable({
        
-       datatable(cleantable(),
+       # cleantable <- ebfsimfinal()[,c(`distid`)]
+       # # ,2,14:17,22:24,45:47)]
+       # #  
+       # colnames(cleantable) <- c("District ID")
+       #                           # "District name",
+       #                           # "Final resources",
+       #                           # "District type",
+       #                           # "Total ASE",
+       #                           # "Final resources",
+       #                           # 
+       #                           # "Percent to adqueacy",
+       #                           # "District type",
+       #                           # "Total ASE",
+       #                           # "Final adequacy target",
+       #                           # "Final adequacy target (per pupil)",
+       #                           # "Tier",
+       #                           # "New funding",
+       #                           # "New funding (per pupil)",
+       #                           # "Gross funding")
+       
+       datatable(ebfsimfinal(),
                  rownames = FALSE,
                  options = list(paging = FALSE, 
                                 scrollY = "700px", scrollX = TRUE,
-                                scrollCollapse = TRUE)) 
+                                scrollCollapse = TRUE))
        # |> 
          # formatCurrency(c("New State Funding Total",
          #                  "Current State Funding Total",
@@ -411,6 +426,19 @@ shinyServer(function(input, output, session) {
          # formatStyle(names(dist_summary()), color = JS("value < 0 ? 'red' : 'black'")) 
        
      })
- # Summary statistics ----
+ # Download table
+     
+     # this function will allow you to download a .csv of your data
+     output$download_data <- downloadHandler(
+       
+       filename = function() {
+         # this names the csv file with today's date
+         paste('output-', Sys.Date(), '.csv', sep='') 
+       },
+       content = function(file) {
+         write_csv(ebfsimfinal(), file)
+       }
+       
+     ) # close downloadHandler
 
 }) # close out server ----
