@@ -99,7 +99,7 @@ shinyUI({
         
         column(8,
                tabsetPanel(
-                 tabPanel("Scatterplot",plotlyOutput("plot1", height = "700px")),
+                 tabPanel("Tier funding distribution",plotlyOutput("plot1", height = "700px")),
                  tabPanel("Illinois Map",leafletOutput("map", height = "700px")),
                  tabPanel("Table",dataTableOutput("tbl"))
                ) # close tabset panel
@@ -114,7 +114,8 @@ shinyUI({
                  conditionalPanel(
                    condition = "input.df_test == 'ebf_base_calc_conpov'",
                    h3(strong("EBF with concentrated poverty weights")),
-                   br()
+                   br(),
+                   h5(em("Research shows that districts with poverty rates of 50% or more are uniquely disadvantaged relative to districts with less poverty. This 50% marker could be understood as a threashold whereby the cumulative effects of poverty really begin to take a toll on student achievements. Our weights account for these unique disadvantages by providing more resources that benefit low-income families, such as, more funding for afterschool and summerschool staff, among other things."))
                  ),
                  h4("Here are some things to know about your policy choices:"),
                  br(),
@@ -134,12 +135,13 @@ shinyUI({
                    br()
                  ),
                  # Add conditional panels for other weights ----
-                 h5(strong("How far off track are you from our original goal to fully-fund schools?")),
+                 h5(strong("How far off track are you from our original goal to fully-fund schools by 2027?")),
                  h5(textOutput("goal")), # add clarification here make it obvious
                  br(),
-                 h5(strong("Percent of Illinois students in underfunded districts who will benefit from this choice")),
+                 h5(strong("Number of Illinois students in underfunded districts who will benefit from this choice")),
                  h5(textOutput("poor_students")),
                  h5("4. Race gaps"),
+                 h5(textOutput("testing")),
                  h5("6. Print out PDF for your district"),
                  tableOutput("toplines")
                ) # close well panel

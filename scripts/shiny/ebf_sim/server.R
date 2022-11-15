@@ -41,16 +41,24 @@ shinyServer(function(input, output, session) {
       paste("Compared to EBF as it is, this amounts to an additional ",dollar(minimum_yearly_funding() - myfd, na.rm = TRUE)," in minimum yearly funding increases.",sep="")
      })
    
-   output$fat_perpupil <- reactive({
-     ebfsim <- get(input$df_test)
-     dollar((sum(ebfsim$final_adequacy_target)/sum(ebfsim$total_ase))-(sum(ebf_base_calc$final_adequacy_target)/sum(ebf_base_calc$total_ase)))
-   })
+   # output$fat_perpupil <- reactive({
+   #   ebfsim <- get(input$df_test)
+   #   dollar((sum(ebfsimfinal()$final_adequacy_target)/sum(ebfsimfinal()$total_ase))-(sum(ebf_base_calc$final_adequacy_target)/sum(ebf_base_calc$total_ase)))
+   # })
+   
+   # output$poor_students <- reactive({
+   #   total_students <- sum(ebfsim2()$total_ase)
+   #   df <- ebfsim2() |>
+   #     filter(tier == 1)
+   #   percent(sum(df$total_ase,na.rm = T)/total_students, accuracy = 3)
+   #   
+   # })
    
    output$poor_students <- reactive({
-     total_students <- sum(ebfsim2()$total_ase)
-     df <- ebfsim2() |>
+     total_students <- 963114.2 # current number of students in tier 1
+     df <- ebfsimfinal() |>
        filter(tier == 1)
-     percent(sum(df$total_ase,na.rm = T)/total_students, accuracy = 3)
+     comma(sum(df$total_ase,na.rm = T) - total_students)
      
    })
    
@@ -65,7 +73,7 @@ shinyServer(function(input, output, session) {
      } else if ((input$years - 2027) >= 20 & (input$years - 2027) < 40) {
        return(paste("Ok, you are very, very far off the mark now. You are ",
                     (input$years - 2027),
-                    " years away from the original goal. Sorry, maybe this wasn't clear. The goal was to fully-fund education for students today, not for your great great grandchildren.",sep=""))
+                    " years away from the original goal. Sorry, maybe this wasn't clear. The goal was to fully-fund education for students in the current generation, not for your great great grandchildren.",sep=""))
      } else if ((input$years - 2027) >= 40) {
        return(paste("You are ",(input$years - 2027)," years away from the original goal. Congratulations, your clear disdain for public education will probably drive us all into a Mad Max-style post-apolocalyptic existence. Public education won't even exist anymore, so you'll like that. The main thing on people's minds will be mining scarce resources from Bullet Farm without dying or appeasing Immortan Joe for a chance to live out their brutal existence in the Citadel.",sep=""))
        
@@ -339,22 +347,70 @@ shinyServer(function(input, output, session) {
        mutate(new_funding_perpupil = new_fy_funding/total_ase)
      })
    
+     
+     output$fat_perpupil <- reactive({
+       dollar(minimum_yearly_funding()/sum(ebfsimfinal()$total_ase)-(300000000/sum(ebf_base_calc$total_ase)))
+     })
+     
 
  # Plot ----
 
      output$plot1 <- renderPlotly({
        ggplotly(
-         ggplot(ebfsimfinal(),
-                aes(y=tier2)) +
-           geom_bar() +
-           scale_y_continuous(labels = dollar_format(), limits = c(0,500)) +
+         ggplot(barchart(),
+                aes(x=tier, y=new_funding_perpupil)) +
+           geom_col() +
+           scale_y_continuous(labels = dollar_format(), limits = c(0,1000)) +
            theme_bw()
        )
        
      }) # close out plot -----
 
  # Map ----
+     
+     
  # Table ----
+     
+  cleantable <- reactive({
+    
+      # colnames(ebfsimfinal()[,c(1,2,14:17,22:24,45:47)]) <- c("District ID",
+      #                                                          "District name",
+      #                                                          "Final resources",
+      #                                                          "Final % to adqueacy",
+      #                                                          "District type",
+      #                                                          "Total ASE",
+      #                                                          "Final adequacy target",
+      #                                                          "Final adequacy target (per pupil)",
+      #                                                          "Tier",
+      #                                                          "New funding",
+      #                                                          "New funding (per pupil)",
+      #                                                          "Gross funding")
+    ebfsimfinal()[,c(1,2)]
+     
+             
+  })
+     
+     output$tbl <- renderDataTable({
+       
+       datatable(cleantable(),
+                 rownames = FALSE,
+                 options = list(paging = FALSE, 
+                                scrollY = "700px", scrollX = TRUE,
+                                scrollCollapse = TRUE)) 
+       # |> 
+         # formatCurrency(c("New State Funding Total",
+         #                  "Current State Funding Total",
+         #                  "State Total Diff",
+         #                  "New State Per Pupil",
+         #                  "Current State Per Pupil",
+         #                  "Per Pupil Diff"),
+         #                digits = 0) |> 
+         # formatPercentage("FRPL Pct", digits = 0) |> 
+         # formatRound(c("Enrollment", "FRPL Student Count"), digits = 0) |> 
+         # # make negative numbers red
+         # formatStyle(names(dist_summary()), color = JS("value < 0 ? 'red' : 'black'")) 
+       
+     })
  # Summary statistics ----
 
 }) # close out server ----
