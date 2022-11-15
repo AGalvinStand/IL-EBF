@@ -80,7 +80,7 @@ shinyUI({
                                 "EBF (as is)" = "ebf_base_calc",
                                 "EBF (concentrated poverty weights)" = "ebf_base_calc_conpov",
                                 "EBF (race weights)" = "ebf_base_calc_race",
-                                "EBF (both weight)" = "ebf_base_calc_conpov_race"
+                                "EBF (both weights)" = "ebf_base_calc_conpov_race"
                                 
                                 ),
                               selected = "EBF (as is)",
@@ -132,7 +132,7 @@ shinyUI({
                  ),
                  conditionalPanel(
                    condition = "input.df_test == 'ebf_base_calc_conpov_race'",
-                   h3(strong("EBF with race weights")),
+                   h3(strong("EBF with race and concentrated poverty weights")),
                    br(),
                    h5(em("Lets see what happens when we address two of Dr. MLK's 'evils of society', racism and poverty, at once. We'll leave excessive militarism for another day." ))
                  ),
@@ -151,11 +151,11 @@ shinyUI({
                    em(textOutput("fat_perpupil")),
                    br()
                  ),
-                 # Add conditional panels for other weights ----
+                 br(),
                  h5(strong("How far off track are you from our original goal to fully-fund schools by 2027?")),
                  h5(textOutput("goal")), # add clarification here make it obvious
                  br(),
-                 h5(strong("Here's additional number of students who will recieve more and/or prioritized funding relative to EBF's current funding levels:")),
+                 h5(strong("Here's the additional number of students, relative to EBF's current funding levels, who will recieve more and/or prioritized funding:")),
                  h5(textOutput("poor_students")),
                  br(),
                  h5(strong("Download district data for the selected model")),
