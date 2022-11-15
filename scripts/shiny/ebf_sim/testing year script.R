@@ -12,8 +12,8 @@ require(scales)
 library(plotly)
 library(tidyverse)
 
-ebf_base_calc_conpov <- read_rds("scripts/shiny/ebf_sim/data/ebf_base_calc_conpov.rds")
-ebf_base_calc <- read_rds("scripts/shiny/ebf_sim/data/ebf_base_calc.rds")
+ebf_base_calc_conpov <- read_rds("data/ebf_base_calc_conpov.rds")
+ebf_base_calc <- read_rds("data/ebf_base_calc.rds")
 
 
 ebfsim <- ebf_base_calc_conpov
