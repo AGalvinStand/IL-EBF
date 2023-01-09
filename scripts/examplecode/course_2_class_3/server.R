@@ -1,0 +1,382 @@
+# R Class Shiny Simulator Template
+# 2022-10-04
+
+# load ----------
+library(shiny)
+library(leaflet)
+library(scales)
+library(viridis)
+library(plotly)
+library(sf)
+library(tidyverse)
+
+
+# Read in clean simulator data from your project's data folder 
+# this data should be completely processed, don't do any processing in 
+# server.R - it will slow down your simulator
+
+app_data <- read_rds("data/simulator_data.rds")
+dist_shp <- read_sf("data/sim_dist.shp")
+
+# define server logic ----------
+shinyServer(function(input, output, session) {
+  
+  # state formula current + dynamic calculations -----------
+  sim_data <- reactive({
+    
+    app_data |> 
+      # this is the code for the dynamic base, weights, and direct funding. 
+      # The $ makes these dynamic so the 
+      # user can change the base, weights, etc.
+      # create new cols for dynamic formula vars ---------
+      mutate(base_amount = input$base,
+             # weights for FRPL, sped, ELL, sparsity, and concentrated poverty
+             frpl_weight = input$frpl_weight,
+             
+             sped_opt1_weight = input$sped_opt1_weight,
+             sped_opt2_weight = input$sped_opt2_weight,
+             sped_opt3_weight = input$sped_opt3_weight,
+             
+             el_weight = input$el_weight,
+             
+             sparsity_limit = input$sparsity_limit,
+             conc_pov_min = input$conc_pov_min,
+             
+             sparsity_weight = input$sparsity_weight,
+             conc_pov_weight = input$conc_pov_weight,
+             
+             # dynamic adm counts -------------
+            
+             # set sparsity adm to base adm if s per sq mi <= sparsity limit
+             # else set sparsity adm to zero if s per sq mi > sparsity limit
+             sparsity_adm = ifelse(student_per_sq_mile <= sparsity_limit,
+                                   base_adm,
+                                   0),
+             
+             
+             # set conc pov adm to adm above conc pov min pct if frpl rate >= conc pov min
+             # else set conc pov adm to zero if frpl pct < conc pov min
+             conc_pov_adm = ifelse(frpl_pct >= conc_pov_min,
+                                   base_adm * (frpl_pct - conc_pov_min),
+                                    0),
+             
+             # current formula calculations -----------------
+             # this code models the current formula - you'll need these columns
+             # to generate current funding per district so that you can model out
+             # the change under user-defined alternative formula settings
+             # note: the xxxx_adm columns are assumed to be in your app_data df
+             # the hard-coded numbers represent base amounts/weights in the 
+             # current formula
+             current_base_funding = base_adm * 6860, # $6860 is the per-pupil base amount 
+             current_frpl_funding = (frpl_adm * 0.25) * 6860, # .25 is the frpl weight 
+             current_sped_opt1_funding = (sped_opt1_adm * 0.15) * 6860, # .15 is the sped option 1 weight        
+             current_sped_opt2_funding = (sped_opt2_adm * 0.20) * 6860, # .20 is the sped option 2 weight  
+             current_sped_opt3_funding = (sped_opt3_adm * 0.40) * 6860, # 0.40 is the sped option 3 weight 
+             current_el_funding = (el_adm * 0.2) * 6860, # 0.70 is the EL L weight 
+             
+             current_sparsity_funding = (sparsity_adm * .05) * 6860,
+            
+             current_conc_pov_funding = (conc_pov_adm * .05) * 6860, 
+    
+             # |- current formula totals ------------
+             # add together the total state funding 
+             current_state_funding_total = current_base_funding + current_frpl_funding +
+               current_sped_opt1_funding + current_sped_opt2_funding + current_sped_opt3_funding +
+               current_el_funding + 
+               current_sparsity_funding + current_conc_pov_funding,
+             current_state_pp = current_state_funding_total / base_adm, # This is the per-pupil funding amount 
+             
+             # weights funding total 
+             current_weights_total = current_frpl_funding + 
+               current_sped_opt1_funding + current_sped_opt2_funding + current_sped_opt3_funding +
+               current_el_funding + 
+               current_sparsity_funding + current_conc_pov_funding, 
+
+             # dynamic formula code ---------------
+             # this code calculates the new funding amounts based on the dynamic 
+             # base and weight amounts  
+             new_base_funding = base_amount * base_adm,
+             # New weight amounts
+             new_frpl_total = base_amount * (frpl_adm * frpl_weight),  
+             new_sped_opt1_total = base_amount * (sped_opt1_adm * sped_opt1_weight), 
+             new_sped_opt2_total = base_amount * (sped_opt2_adm * sped_opt2_weight),
+             new_sped_opt3_total = base_amount * (sped_opt3_adm * sped_opt3_weight),
+             new_el_total = base_amount * (el_adm * el_weight),
+             
+             new_sparsity_total = base_amount * (sparsity_adm * sparsity_weight),
+             new_conc_pov_total = base_amount * (conc_pov_adm * conc_pov_weight),
+             
+             # |- dynamic formula totals ----------
+             # new state funding total 
+             new_state_funding_total = new_base_funding + new_frpl_total + 
+               new_sped_opt1_total + new_sped_opt2_total + new_sped_opt3_total +
+               new_el_total +
+               new_sparsity_total + new_conc_pov_total, 
+             
+             new_state_pp = new_state_funding_total / base_adm,
+             
+             # New weights funding 
+             new_weights_total = new_frpl_total +
+               new_sped_opt1_total + new_sped_opt2_total + new_sped_opt3_total + 
+               new_el_total +
+               new_sparsity_total + new_conc_pov_total,
+             
+             # current vs dynamic district differences -------
+             weights_diff = new_weights_total - current_weights_total,
+             state_total_diff = new_state_funding_total - current_state_funding_total,
+             state_total_pp = new_state_pp - current_state_pp) 
+    
+  })
+  
+  
+  # line item totals ------------
+  ## define the outputs for the total state budget and the balance to show in the UI
+  output$budget <- reactive({
+    dollar(sum(sim_data()$current_state_funding_total, na.rm = TRUE))
+  })
+  
+  output$balance <- reactive({
+    dollar(sum(sim_data()$new_state_funding_total) - sum(sim_data()$current_state_funding_total, na.rm = TRUE))
+  })
+  
+
+  output$base <- reactive({
+    dollar(sum(sim_data()$new_base_funding, na.rm = TRUE))
+  })
+  
+  output$econ_dis <- reactive({
+    dollar(sum(sim_data()$new_frpl_total, na.rm = TRUE))
+  })
+  
+  output$sped_opt1 <- reactive({
+    dollar(sum(sim_data()$new_sped_opt1_total, na.rm = TRUE))
+  })
+  
+  
+  output$sped_opt2 <- reactive({
+    dollar(sum(sim_data()$new_sped_opt2_total, na.rm = TRUE))
+  })
+  
+  output$sped_opt3 <- reactive({
+    dollar(sum(sim_data()$new_sped_opt3_total, na.rm = TRUE))
+  })
+
+  
+  # DISTRICT WEIGHT TOTALS TBD
+  output$conc_pov <- reactive({
+    dollar(sum(sim_data()$new_conc_pov_total, na.rm = TRUE))
+  })
+  
+  output$sparsity <- reactive({
+    dollar(sum(sim_data()$new_sparsity_total, na.rm = TRUE))
+  })
+  
+  
+  # state summary df --------------
+  # useful for checking your work!
+  state_summary <- reactive({
+    
+    sim_data() %>%
+      summarise(base_funding = sum(new_base_funding, na.rm = TRUE),
+                
+                frpl_funding = sum(new_frpl_total, na.rm = TRUE),
+                
+                conc_pov_funding = sum(new_conc_pov_total, na.rm = T),
+                
+                sped_opt1_funding = sum(new_sped_opt1_total, na.rm = T),
+                
+                sped_opt2_funding = sum(new_sped_opt2_total, na.rm = T),
+                
+                sped_opt3_funding = sum(new_sped_opt3_total, na.rm = T),
+                
+                el_funding = sum(new_el_l_total, na.rm = T),
+                
+                sparsity_funding = sum(new_sparsity_total, na.rm =T),
+                
+                total_state_funding_amount = sum(new_state_funding_total, na.rm= T),
+                weights_funding = sum(new_weights_total, na.rm=T),
+                direct_funding = sum(new_direct_total, na.rm=T),
+                local_share_base = sum(new_local_share_base, na.rm = T)) %>%
+      
+      pivot_longer(everything(),
+                   names_to = "Category", values_to = "Amount") 
+    
+    
+    
+  })
+  
+  # district summary df ------------
+  ## Rename variables for plots and tables
+  dist_summary <- reactive({
+    sim_data() |> 
+      rename(District = district, ## make sure your variable names here match the choices in the UI
+             Enrollment = base_adm,
+             `FRPL Student Count` = frpl_adm,
+             `FRPL Pct` = frpl_pct,
+             `Current State Funding Total` = current_state_funding_total,
+             `Current State Per Pupil` = current_state_pp,
+             `New State Funding Total` = new_state_funding_total,
+             `New State Per Pupil` = new_state_pp,
+             `State Total Diff` = state_total_diff,
+             `Per Pupil Diff` = state_total_pp) |> 
+      select(District, Enrollment,
+             `FRPL Student Count`, `FRPL Pct`,
+             `Current State Funding Total`, 
+             `New State Funding Total`, `State Total Diff`,
+             `Current State Per Pupil`,
+             `New State Per Pupil`,
+             `Per Pupil Diff`) 
+    
+  })
+  
+  # data for download button ---------
+  
+  df_for_dl <- reactive({  
+    # this is really helpful for debugging since you can change which df() 
+    # will be passed through to the dl function below - just make sure only one
+    # of these dfs is un-commented!
+    sim_data()
+    # state_summary()
+    # dist_summary()
+  })
+  
+  # this function will allow you to download a .csv of your data
+  output$download_data <- downloadHandler(
+    
+    filename = function() {
+      # this names the csv file with today's date
+      paste('simulator-output-', Sys.Date(), '.csv', sep='') 
+    },
+    content = function(file) {
+      write_csv(df_for_dl(), file)
+    }
+    
+  ) # close downloadHandler
+  
+  
+  
+  # table output ---------------
+  
+  # render table output
+  output$tbl <- renderDataTable({
+      
+      datatable(dist_summary(),
+                rownames = FALSE,
+                options = list(paging = FALSE, 
+                               scrollY = "700px", scrollX = TRUE,
+                               scrollCollapse = TRUE)) |> 
+        formatCurrency(c("New State Funding Total",
+                         "Current State Funding Total",
+                         "State Total Diff",
+                         "New State Per Pupil",
+                         "Current State Per Pupil",
+                         "Per Pupil Diff"),
+                       digits = 0) |> 
+      formatPercentage("FRPL Pct", digits = 0) |> 
+      formatRound(c("Enrollment", "FRPL Student Count"), digits = 0) |> 
+      # make negative numbers red
+      formatStyle(names(dist_summary()), color = JS("value < 0 ? 'red' : 'black'")) 
+      
+    })
+    
+  # plot 1 output -----------------
+    output$plot1 <- renderPlotly({
+      ggplotly(
+        ggplot(sim_data(),
+                      aes(x = mpv,
+                          y = new_state_pp,
+                          size = base_adm,
+                          color = frpl_pct,
+                          text = paste0("District: ", district, "<br>",
+                                        "Property Wealth PP: ", dollar(mpv, accuracy = 1), "<br>",
+                                        "Dyanmic State PP: ", dollar(new_state_pp, accuracy = 1), "<br>",
+                                        "Base ADM: ", comma(base_adm), "<br>",
+                                        "FRPL %: ", percent(frpl_pct, accuracy = .1)))) + # tooltip definition
+                 geom_point() +
+                 scale_x_continuous(labels = dollar_format()) +
+                 scale_y_continuous(labels = dollar_format()) +
+                 scale_size_area(labels = comma_format()) +
+                 scale_color_viridis(labels = percent_format(accuracy = 1)) +
+                 labs(x = "Property Wealth Per-Pupil", 
+                      y = "Dynamic State Aid Per-Pupil", 
+                      color = "FRPL %",
+                      size = "Base ADM") +
+                 theme_bw(),
+        tooltip = "text")
+    })
+    
+    # plot 2 output --------------
+    output$plot2<- renderPlotly({
+        ggplotly(
+          ggplot(sim_data(),
+                 aes(x = current_state_pp,
+                     y = new_state_pp,
+                     size = base_adm,
+                     color = frpl_pct,
+                     text = paste0("District: ", district, "<br>",
+                                   "Current State PP: ", dollar(current_state_pp, accuracy = 1), "<br>",
+                                   "Dyanmic State PP: ", dollar(new_state_pp, accuracy = 1), "<br>",
+                                   "Base ADM: ", comma(base_adm), "<br>",
+                                   "FRPL %: ", percent(frpl_pct, accuracy = .1)))) + # tooltip definition
+            geom_point() +
+            scale_x_continuous(labels = dollar_format()) +
+            scale_y_continuous(labels = dollar_format()) +
+            scale_size_area(labels = comma_format()) +
+            scale_color_viridis(labels = percent_format(accuracy = 1)) +
+            labs(x = "Current State Aid Per-Pupil", 
+                 y = "Dynamic State Aid Per-Pupil", 
+                 color = "FRPL %",
+                 size = "Base ADM") +
+            theme_bw(),
+          tooltip = "text")
+      })
+      # map output ---------------
+     
+  map_data <- reactive({ ## joining the shapefile data with the reactive data we've created in the app already
+    
+    merge(dist_shp, sim_data(), by.x = "geoid", by.y = "ncesid")
+    
+  })
+  
+  output$map <- renderLeaflet({  ## rendering the map
+    
+    state_aid_pal <- colorBin(
+      palette = c( "firebrick","#DD513AFF", "#FCA50AFF",
+                   "grey84",
+                   "#AADC32FF","#5DC863FF", "forestgreen"),
+      bins = c(-10000, -1000, -250, -50, 50, 250, 1000, 10000),
+      domain = map_data()$state_total_pp)
+    
+    
+    leaflet(map_data()) %>% # actually creating the map by applying all the reactive expressions we previously defined
+      addProviderTiles("CartoDB.Positron") %>% # background layer from Carto
+      addPolygons(fillOpacity = 0.5, # make the layers 50% transparent so you can see the background map below
+                  weight = 1, # line thickness
+                  popup = paste("<strong>", map_data()$district, "</strong>", "<br>",
+                                paste0("FY22 funding: ", dollar(map_data()$current_state_pp, accuracy = 1)),
+                                "<br>",
+                                paste0("Model funding: ", dollar(map_data()$new_state_pp, accuracy = 1)),
+                                "<br>",
+                                paste0("PP Change: ", dollar(map_data()$state_total_pp,accuracy = 1)),
+                                "<br>",
+                                paste0("ADM: ", comma(map_data()$base_adm, accuracy = 1)),
+                                "<br>",
+                                
+                                paste0("MHI: ", dollar(map_data()$mhi, accuracy =  1)),
+                                "<br>",
+                                paste0("MPV: ", dollar(map_data()$mpv,
+                                                              accuracy = 1)),
+                                "<br>",
+                                paste0("FRPL %: ", percent(map_data()$frpl_pct, accuracy = .1)),
+                                sep = "\n"),
+                  fillColor = ~state_aid_pal(state_total_pp),
+                  color = "#556067") %>%
+      addLegend(position = "bottomright",
+                pal = state_aid_pal,
+                values = ~state_total_pp,
+                title = "Change in PP $")
+  })
+  
+  
+  })  # close the shinyServer function
+

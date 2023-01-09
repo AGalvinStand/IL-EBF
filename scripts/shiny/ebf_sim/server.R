@@ -14,10 +14,21 @@ require(scales)
 library(plotly)
 library(tidyverse)
 library(base)
+library(edbuildmapr)
+library(leaflet)
+library(sf)
 
 options(shiny.trace = TRUE)
 
-library(shiny)
+il_map_raw <- il_shapepull(data_year = "2019", with_data = TRUE)
+
+# clean ----------
+
+il_map_raw <- il_map_raw |>
+  # tidy up colnames
+  rename_with(tolower) |>
+  filter(state == "Illinois")
+
 
 ebf_base_calc_conpov <- read_rds("data/ebf_base_calc_conpov.rds")
 ebf_base_calc <- read_rds("data/ebf_base_calc.rds")
@@ -364,26 +375,68 @@ shinyServer(function(input, output, session) {
      output$plot1 <- renderPlotly({
        ggplotly(
          ggplot(barchart(),
-                aes(x=tier, y=new_funding_perpupil)) +
-           geom_col() +
-           scale_y_continuous(labels = dollar_format(), limits = c(0,1000)) +
-           theme_bw()
+                aes(x=as.factor(tier), 
+                    y=new_funding_perpupil,
+                    text = paste0("This amounts to <b>", dollar(new_funding_perpupil),"</b> per student in tier ",as.character(tier)))) +
+           geom_bar(stat = "identity",
+                    position = "dodge") +
+           xlab("Tier") +
+           ylab("New allocation appropriation (per pupil)") +
+           scale_y_continuous(labels = dollar_format(), limits = c(0,1200)) +
+           theme_bw(),
+         tooltip = "text"
        )
        
      }) # close out plot -----
 
  # Map ----
      
+     map_data <- reactive({ ## joining the shapefile data with the reactive data we've created in the app already
+       
+       merge(il_map_raw, ebfsimfinal(), by.x = "District ID", by.y = "distid")
+       
+     })
      
- # Table ----
      
-  # cleantable <- reactive({
-  # 
-  #   ebfsimfinal()[,c(1,2,14:17,22:24,45:47)]
-  #     
-  #    
-  #            
-  # })
+     output$map <- renderLeaflet({  ## rendering the map
+       
+       state_aid_pal <- colorBin(
+         palette = c( "firebrick","#DD513AFF", "#FCA50AFF",
+                      "grey84",
+                      "#AADC32FF","#5DC863FF", "forestgreen"),
+         bins = c(-10000, -1000, -250, -50, 50, 250, 1000, 10000),
+         domain = map_data()$state_total_pp)
+       
+       
+       leaflet(map_data()) %>% # actually creating the map by applying all the reactive expressions we previously defined
+         addProviderTiles("CartoDB.Positron") %>% # background layer from Carto
+         addPolygons(fillOpacity = 0.5, # make the layers 50% transparent so you can see the background map below
+                     weight = 1, # line thickness
+                     popup = paste("<strong>", map_data()$district, "</strong>", "<br>",
+                                   paste0("FY22 funding: ", dollar(map_data()$current_state_pp, accuracy = 1)),
+                                   "<br>",
+                                   paste0("Model funding: ", dollar(map_data()$new_state_pp, accuracy = 1)),
+                                   "<br>",
+                                   paste0("PP Change: ", dollar(map_data()$state_total_pp,accuracy = 1)),
+                                   "<br>",
+                                   paste0("ADM: ", comma(map_data()$base_adm, accuracy = 1)),
+                                   "<br>",
+                                   
+                                   paste0("MHI: ", dollar(map_data()$mhi, accuracy =  1)),
+                                   "<br>",
+                                   paste0("MPV: ", dollar(map_data()$mpv,
+                                                          accuracy = 1)),
+                                   "<br>",
+                                   paste0("FRPL %: ", percent(map_data()$frpl_pct, accuracy = .1)),
+                                   sep = "\n"),
+                     fillColor = ~state_aid_pal(state_total_pp),
+                     color = "#556067") %>%
+         addLegend(position = "bottomright",
+                   pal = state_aid_pal,
+                   values = ~state_total_pp,
+                   title = "Change in PP $")
+     })
+     
      
      output$tbl <- renderDataTable({
        
