@@ -20,20 +20,13 @@ library(sf)
 
 options(shiny.trace = TRUE)
 
-il_map_raw <- il_shapepull(data_year = "2019", with_data = TRUE)
-
-# clean ----------
-
-il_map_raw <- il_map_raw |>
-  # tidy up colnames
-  rename_with(tolower) |>
-  filter(state == "Illinois")
-
-
 ebf_base_calc_conpov <- read_rds("data/ebf_base_calc_conpov.rds")
 ebf_base_calc <- read_rds("data/ebf_base_calc.rds")
 ebf_base_calc_race <- read_rds("data/ebf_base_calc_race.rds")
 ebf_base_calc_conpov_race <- read_rds("data/ebf_base_calc_conpov_race.rds")
+
+il_map_raw <- read_sf("data/il_map_raw.shp")
+crosswalk <- read_rds("data/crosswalk.rds")
 
 shinyServer(function(input, output, session) {
   
@@ -391,50 +384,82 @@ shinyServer(function(input, output, session) {
 
  # Map ----
      
-     map_data <- reactive({ ## joining the shapefile data with the reactive data we've created in the app already
-       
-       merge(il_map_raw, ebfsimfinal(), by.x = "District ID", by.y = "distid")
-       
+     crosswalkmerge <- reactive ({
+       merge(ebfsimfinal(), crosswalk, by.x = "distid", by.y = "District ID", all = FALSE)
      })
+
+      map_data <- reactive({ ## joining the shapefile data with the reactive data we've created in the app already
+        merge(il_map_raw, crosswalkmerge(), by.x = "geoid", by.y = "ncesid")
+     
+      })
+      
+      map_uni <- reactive({
+        
+        map_data |>
+        filter(map_data$sdtype == "uni") |>
+        extract(c('lat', 'lon'), '\\((.*), (.*)\\)', convert = TRUE)
+      })
+      map_nonuni <- reactive({
+        map_data |>
+          filter(map_data$sdtype != "uni") |>
+          extract(c('lat', 'lon'), '\\((.*), (.*)\\)', convert = TRUE)
+      })
      
      
      output$map <- renderLeaflet({  ## rendering the map
        
-       state_aid_pal <- colorBin(
-         palette = c( "firebrick","#DD513AFF", "#FCA50AFF",
-                      "grey84",
-                      "#AADC32FF","#5DC863FF", "forestgreen"),
-         bins = c(-10000, -1000, -250, -50, 50, 250, 1000, 10000),
-         domain = map_data()$state_total_pp)
+       # state_aid_pal <- colorBin(
+       #   palette = c( "firebrick","#DD513AFF", "#FCA50AFF",
+       #                "grey84",
+       #                "#AADC32FF","#5DC863FF", "forestgreen"),
+       #   bins = c(-10000, -1000, -250, -50, 50, 250, 1000, 10000),
+       #   domain = map_data()$state_total_pp)
        
        
-       leaflet(map_data()) %>% # actually creating the map by applying all the reactive expressions we previously defined
-         addProviderTiles("CartoDB.Positron") %>% # background layer from Carto
-         addPolygons(fillOpacity = 0.5, # make the layers 50% transparent so you can see the background map below
-                     weight = 1, # line thickness
-                     popup = paste("<strong>", map_data()$district, "</strong>", "<br>",
-                                   paste0("FY22 funding: ", dollar(map_data()$current_state_pp, accuracy = 1)),
+       leaflet() %>% # actually creating the map by applying all the reactive expressions we previously defined
+#         addProviderTiles("CartoDB.Positron") |>
+         addTiles() |>
+         addPolygons(data = map_uni(),
+                     fillOpacity = 0.5, # make the layers 50% transparent so you can see the background map below
+                     weight = 0.5, # line thickness
+                     group = "Unified districts",
+                     lng = ~lon,
+                     lat = ~lat,
+                     highlightOptions = highlightOptions(color = "white", weight = 1,
+                                                         bringToFront = TRUE),
+                     popup = paste("<strong>", map_data()$name, "</strong>", "<br>",
+                                   paste0("Tier: ", map_data()$tier_text),
                                    "<br>",
-                                   paste0("Model funding: ", dollar(map_data()$new_state_pp, accuracy = 1)),
+                                   paste0("New per pupil funding: ", dollar(map_data()$new_fy_funding_perpupil)),
                                    "<br>",
-                                   paste0("PP Change: ", dollar(map_data()$state_total_pp,accuracy = 1)),
+                                   paste0("Percent nonwhite: ", percent(map_data()$pctnw,accuracy = 1)),
                                    "<br>",
-                                   paste0("ADM: ", comma(map_data()$base_adm, accuracy = 1)),
+                                   paste0("Percent student poverty: ", percent(map_data()$stpovrt,accuracy = 1))),
+                      fillColor = ~colorQuantile("YlOrRd", new_fy_funding_perpupil)(new_fy_funding_perpupil)) |>
+         addPolygons(data = map_nonuni(),
+                     fillOpacity = 0.5, # make the layers 50% transparent so you can see the background map below
+                     weight = 0.5, # line thickness
+                     group = "Elementary and secondary districts",
+                     lng = ~lon,
+                     lat = ~lat,
+                     highlightOptions = highlightOptions(color = "white", weight = 1,
+                                                         bringToFront = TRUE),
+                     popup = paste("<strong>", map_data()$name, "</strong>", "<br>",
+                                   paste0("Tier: ", map_data()$tier_text),
                                    "<br>",
-                                   
-                                   paste0("MHI: ", dollar(map_data()$mhi, accuracy =  1)),
+                                   paste0("New per pupil funding: ", dollar(map_data()$new_fy_funding_perpupil)),
                                    "<br>",
-                                   paste0("MPV: ", dollar(map_data()$mpv,
-                                                          accuracy = 1)),
+                                   paste0("Percent nonwhite: ", percent(map_data()$pctnw,accuracy = 1)),
                                    "<br>",
-                                   paste0("FRPL %: ", percent(map_data()$frpl_pct, accuracy = .1)),
-                                   sep = "\n"),
-                     fillColor = ~state_aid_pal(state_total_pp),
-                     color = "#556067") %>%
-         addLegend(position = "bottomright",
-                   pal = state_aid_pal,
-                   values = ~state_total_pp,
-                   title = "Change in PP $")
+                                   paste0("Percent student poverty: ", percent(map_data()$stpovrt,accuracy = 1))),
+                     fillColor = ~colorQuantile("YlOrRd", new_fy_funding_perpupil)(new_fy_funding_perpupil)) |>
+         addLayersControl(overlayGroups = c("Unified districts", "Elementary and secondary districts"))
+       
+       # %>%
+         # addLegend(position = "bottomright",
+         #           pal = state_aid_pal,
+         #           values = ~state_total_pp,
+         #           title = "Change in PP $")
      })
      
      
