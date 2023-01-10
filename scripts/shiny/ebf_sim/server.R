@@ -422,10 +422,12 @@ shinyServer(function(input, output, session) {
        #                "#AADC32FF","#5DC863FF", "forestgreen"),
        #   bins = c(-10000, -1000, -250, -50, 50, 250, 1000, 10000),
        #   domain = map_data()$state_total_pp)
-       
+       pal <- colorQuantile(palette = "YlOrRd",
+                            domain = map_data()$new_fy_funding_perpupil,
+                            n = 4)
        
        leaflet() %>% # actually creating the map by applying all the reactive expressions we previously defined
-         addProviderTiles("CartoDB.Positron") |>
+         # addProviderTiles("CartoDB.Positron") |>
          addPolygons(data = map_uni(),
                      fillOpacity = 0.5, # make the layers 50% transparent so you can see the background map below
                      weight = 0.5, # line thickness
@@ -439,7 +441,7 @@ shinyServer(function(input, output, session) {
                                    paste0("Percent nonwhite: ", percent(map_uni()$pctnw,accuracy = 1)),
                                    "<br>",
                                    paste0("Percent student poverty: ", percent(map_uni()$stpovrt,accuracy = 1))),
-                      fillColor = ~colorQuantile("YlOrRd", new_fy_funding_perpupil)(new_fy_funding_perpupil),
+                      fillColor = ~pal(map_data()$new_fy_funding_perpupil),
                      group = "Unified districts") |>
          addPolygons(data = map_elem(),
                      fillOpacity = 0.5, # make the layers 50% transparent so you can see the background map below
@@ -455,7 +457,7 @@ shinyServer(function(input, output, session) {
                                    paste0("Percent nonwhite: ", percent(map_elem()$pctnw,accuracy = 1)),
                                    "<br>",
                                    paste0("Percent student poverty: ", percent(map_elem()$stpovrt,accuracy = 1))),
-                     fillColor = ~colorQuantile("YlOrRd", new_fy_funding_perpupil)(new_fy_funding_perpupil)) |>
+                     fillColor = ~pal(map_data()$new_fy_funding_perpupil)) |>
          addPolygons(data = map_sec(),
                      fillOpacity = 0.5, # make the layers 50% transparent so you can see the background map below
                      weight = 0.5, # line thickness
@@ -470,10 +472,16 @@ shinyServer(function(input, output, session) {
                                    paste0("Percent nonwhite: ", percent(map_sec()$pctnw,accuracy = 1)),
                                    "<br>",
                                    paste0("Percent student poverty: ", percent(map_sec()$stpovrt,accuracy = 1))),
-                     fillColor = ~colorQuantile("YlOrRd", new_fy_funding_perpupil)(new_fy_funding_perpupil)) |>
+                     fillColor = ~pal(map_data()$new_fy_funding_perpupil)) |>
+         addLegend(data = map_data(),
+                   position = "bottomright",
+                    values = ~new_fy_funding_perpupil,
+                   pal = pal,
+                    title = "New EBF funding per pupil") |>
           addLayersControl(overlayGroups = c("Unified districts", 
                                              "High school districts",
                                              "Elementary districts"))
+
        
        # %>%
          # addLegend(position = "bottomright",
