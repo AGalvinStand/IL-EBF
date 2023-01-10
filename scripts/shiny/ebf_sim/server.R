@@ -395,16 +395,24 @@ shinyServer(function(input, output, session) {
       
       map_uni <- reactive({
         
-        map_data |>
-        filter(map_data$sdtype == "uni") |>
-        extract(c('lat', 'lon'), '\\((.*), (.*)\\)', convert = TRUE)
+        map_data() |>
+        dplyr::filter(orgtype == "Unit")
+        
       })
-      map_nonuni <- reactive({
-        map_data |>
-          filter(map_data$sdtype != "uni") |>
-          extract(c('lat', 'lon'), '\\((.*), (.*)\\)', convert = TRUE)
+      
+      map_elem <- reactive({
+        map_data() |>
+          dplyr::filter(orgtype == "Elementary" )
+
       })
-     
+      
+      map_sec <- reactive({
+        map_data() |>
+          dplyr::filter(orgtype == "High School")
+        
+      })
+      
+
      
      output$map <- renderLeaflet({  ## rendering the map
        
@@ -417,43 +425,55 @@ shinyServer(function(input, output, session) {
        
        
        leaflet() %>% # actually creating the map by applying all the reactive expressions we previously defined
-#         addProviderTiles("CartoDB.Positron") |>
-         addTiles() |>
+         addProviderTiles("CartoDB.Positron") |>
          addPolygons(data = map_uni(),
                      fillOpacity = 0.5, # make the layers 50% transparent so you can see the background map below
                      weight = 0.5, # line thickness
-                     group = "Unified districts",
-                     lng = ~lon,
-                     lat = ~lat,
                      highlightOptions = highlightOptions(color = "white", weight = 1,
                                                          bringToFront = TRUE),
-                     popup = paste("<strong>", map_data()$name, "</strong>", "<br>",
-                                   paste0("Tier: ", map_data()$tier_text),
+                     popup = paste("<strong>", map_uni()$name, "</strong>", "<br>",
+                                   paste0("Tier: ", map_uni()$tier_text),
                                    "<br>",
-                                   paste0("New per pupil funding: ", dollar(map_data()$new_fy_funding_perpupil)),
+                                   paste0("New per pupil funding: ", dollar(map_uni()$new_fy_funding_perpupil)),
                                    "<br>",
-                                   paste0("Percent nonwhite: ", percent(map_data()$pctnw,accuracy = 1)),
+                                   paste0("Percent nonwhite: ", percent(map_uni()$pctnw,accuracy = 1)),
                                    "<br>",
-                                   paste0("Percent student poverty: ", percent(map_data()$stpovrt,accuracy = 1))),
-                      fillColor = ~colorQuantile("YlOrRd", new_fy_funding_perpupil)(new_fy_funding_perpupil)) |>
-         addPolygons(data = map_nonuni(),
+                                   paste0("Percent student poverty: ", percent(map_uni()$stpovrt,accuracy = 1))),
+                      fillColor = ~colorQuantile("YlOrRd", new_fy_funding_perpupil)(new_fy_funding_perpupil),
+                     group = "Unified districts") |>
+         addPolygons(data = map_elem(),
                      fillOpacity = 0.5, # make the layers 50% transparent so you can see the background map below
                      weight = 0.5, # line thickness
-                     group = "Elementary and secondary districts",
-                     lng = ~lon,
-                     lat = ~lat,
+                     group = "Elementary districts",
                      highlightOptions = highlightOptions(color = "white", weight = 1,
                                                          bringToFront = TRUE),
-                     popup = paste("<strong>", map_data()$name, "</strong>", "<br>",
-                                   paste0("Tier: ", map_data()$tier_text),
+                     popup = paste("<strong>", map_elem()$name, "</strong>", "<br>",
+                                   paste0("Tier: ", map_elem()$tier_text),
                                    "<br>",
-                                   paste0("New per pupil funding: ", dollar(map_data()$new_fy_funding_perpupil)),
+                                   paste0("New per pupil funding: ", dollar(map_elem()$new_fy_funding_perpupil)),
                                    "<br>",
-                                   paste0("Percent nonwhite: ", percent(map_data()$pctnw,accuracy = 1)),
+                                   paste0("Percent nonwhite: ", percent(map_elem()$pctnw,accuracy = 1)),
                                    "<br>",
-                                   paste0("Percent student poverty: ", percent(map_data()$stpovrt,accuracy = 1))),
+                                   paste0("Percent student poverty: ", percent(map_elem()$stpovrt,accuracy = 1))),
                      fillColor = ~colorQuantile("YlOrRd", new_fy_funding_perpupil)(new_fy_funding_perpupil)) |>
-         addLayersControl(overlayGroups = c("Unified districts", "Elementary and secondary districts"))
+         addPolygons(data = map_sec(),
+                     fillOpacity = 0.5, # make the layers 50% transparent so you can see the background map below
+                     weight = 0.5, # line thickness
+                     group = "High school districts",
+                     highlightOptions = highlightOptions(color = "white", weight = 1,
+                                                         bringToFront = TRUE),
+                     popup = paste("<strong>", map_sec()$name, "</strong>", "<br>",
+                                   paste0("Tier: ", map_sec()$tier_text),
+                                   "<br>",
+                                   paste0("New per pupil funding: ", dollar(map_sec()$new_fy_funding_perpupil)),
+                                   "<br>",
+                                   paste0("Percent nonwhite: ", percent(map_sec()$pctnw,accuracy = 1)),
+                                   "<br>",
+                                   paste0("Percent student poverty: ", percent(map_sec()$stpovrt,accuracy = 1))),
+                     fillColor = ~colorQuantile("YlOrRd", new_fy_funding_perpupil)(new_fy_funding_perpupil)) |>
+          addLayersControl(overlayGroups = c("Unified districts", 
+                                             "High school districts",
+                                             "Elementary districts"))
        
        # %>%
          # addLegend(position = "bottomright",

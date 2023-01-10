@@ -55,3 +55,22 @@ leaflet(ebf_base_calc) |>
   addPolygons(color = "444444", weight = 1, smoothFactor = 0.5,
               opacity = 1.0, fillOpacity = 0.5,
               fillColor = ~colorQuantile("YlOrRd", total_ase)(total_ase))
+
+
+# testing merge
+
+
+ebf_base_calc_conpov <- read_rds("data/ebf_base_calc_conpov.rds")
+ebf_base_calc <- read_rds("data/ebf_base_calc.rds")
+ebf_base_calc_race <- read_rds("data/ebf_base_calc_race.rds")
+ebf_base_calc_conpov_race <- read_rds("data/ebf_base_calc_conpov_race.rds")
+
+il_map_raw <- read_sf("data/il_map_raw.shp")
+crosswalk <- read_rds("data/crosswalk.rds")
+
+
+crosswalkmerge <-  merge(ebf_base_calc, crosswalk, by.x = "distid", by.y = "District ID", all = FALSE)
+
+map_data <- merge(il_map_raw, crosswalkmerge, by.x = "geoid", by.y = "ncesid", all = FALSE)
+  
+
