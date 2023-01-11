@@ -477,10 +477,11 @@ shinyServer(function(input, output, session) {
                    position = "bottomright",
                     values = ~new_fy_funding_perpupil,
                    pal = pal,
-                    title = "New EBF funding per pupil") |>
+                    title = paste("New EBF funding per pupil","<br>","</strong>","Quartiles")) |>
           addLayersControl(overlayGroups = c("Unified districts", 
                                              "High school districts",
-                                             "Elementary districts"))
+                                             "Elementary districts"),
+                           options = layersControlOptions(collapsed=F))
 
        
        # %>%
