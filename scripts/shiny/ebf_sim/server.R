@@ -39,7 +39,7 @@ shinyServer(function(input, output, session) {
      
      ebfsim <- get(input$df_test)
      
-     (sum(ebfsim$final_adequacy_target) - sum(ebfsim$final_resources))/(input$years - as.numeric(format(Sys.time(), "%Y")))
+     (sum(ebfsim$final_adequacy_target,na.rm=T) - sum(ebfsim$final_resources,na.rm=T))/(input$years - as.numeric(format(Sys.time(), "%Y")))
    })
    
    output$myf <- reactive({

@@ -80,6 +80,7 @@ ebf_base_calc_race <- transform(ebf_base_calc_race,
                                 final_percent_adequacy = final_resources / final_adequacy_target
                                 )
 
+
 write_rds(ebf_base_calc_race,"C:/Users/jpacas/Documents/GitHub/IL-EBF/scripts/shiny/ebf_sim/data/ebf_base_calc_race.rds")
 
 
